@@ -1,5 +1,9 @@
 package timedb
 
+import (
+    "time"
+)
+
 type Cacher interface {
-    cache(p *InputPoint) error
+    cache(p *InputPoint,t time.Time) error
 }
