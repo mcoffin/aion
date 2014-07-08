@@ -7,6 +7,19 @@ Cascading time series database with fast tags based on Cassandra
 
 TimeDB stores data in cascading **levels**. When data in a level reaches a certain age, it is aggregated, and *cascades* down to the next level. Afterwards, at some point, the data in the first level will expire.
 
+## Data Caching
+
+Before enough data has accumulated to store it in the first level, it has to be *cached*. The raw data is stored in a cache table like the one below.
+
+````
+CREATE TABLE cache (
+  series text,
+  time timeuuid,
+  value float,
+  PRIMARY KEY (series, time)
+);
+````
+
 ## Data Storage
 
 Each level's data is stored in **buckets**. A bucket contains a window of data differentially encoded. There may be multiple buckets stored for a given time window representing pre-aggregated data.
