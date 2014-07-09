@@ -6,7 +6,6 @@ import (
 
 type TimeDB struct {
     Levels []QueryLevel
-    Cacher Cacher
 }
 
 type QueryLevel struct {
