@@ -5,6 +5,6 @@ Cascading time series database with fast tags based on Cassandra
 
 # Architecture
 
-Data in timedb is stored in **query levels**. Each query level contains blocks of data blocked together at a time interval that represents a common time interval over which to query.
+Data in timedb is stored in **query levels**. A query level contains blocks of differentially encoded data over a time span. Each of these blocks of data is called a **bucket**. Ideally, a query level is of a duration such that when a bucket is queried out, the entire bucket of data was desired in the query. If the entire bucket is used for the query, then no additional data transfer overhead was added by transferring the entire bucket instead of just the required data.
 
-Within a query level, each block of data (or **bucket**), is stored with a start timestamp and base value, and the data accross the time range is differentially encoded.
+Additionally, a query level can contain multiple **aggregation levels**. These allow the storage of data at different granularities within the query level.
