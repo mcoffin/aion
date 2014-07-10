@@ -2,6 +2,7 @@ package delta
 
 import (
     "math"
+    "time"
 )
 
 type Encoder struct {
@@ -17,6 +18,14 @@ func NewEncoder(start float64, precision int) *Encoder {
     return enc
 }
 
+func NewTimeEncoder(start time.Time) *Encoder {
+    enc := &Encoder{
+        multiplier: 0.0,
+    }
+    enc.last = start.Unix()
+    return enc
+}
+
 func (self *Encoder) Encode(values []float64) []int {
     data := make([]int, len(values))
     for i, value := range values {
@@ -27,6 +36,13 @@ func (self *Encoder) Encode(values []float64) []int {
 
 func (self *Encoder) EncodeFloat64(value float64) int {
     next := convertFloat64(value, self.multiplier) // Use the global version to take advantage of inlining
+    delta := int(next - self.last)
+    self.last = next
+    return delta
+}
+
+func (self *Encoder) EncodeTime(value time.Time) int {
+    next := value.Unix()
     delta := int(next - self.last)
     self.last = next
     return delta

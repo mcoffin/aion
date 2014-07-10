@@ -32,3 +32,16 @@ func (self *bucketEncoder) Write(values []float64) {
 func (self *bucketEncoder) Close() {
     self.genc.Close()
 }
+
+type bucketDecoder struct {
+    ddec *delta.Decoder
+    gdec *deltagolomb.ExpGolombDecoder
+}
+
+func newBucketDecoder(base float64, precision int, in io.Reader) *bucketDecoder {
+    dec := &bucketDecoder{
+        ddec: delta.NewDecoder(base, precision),
+        gdec: deltagolomb.NewExpGolombDecoder(in),
+    }
+    return dec
+}
