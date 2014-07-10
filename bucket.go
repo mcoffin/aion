@@ -2,6 +2,7 @@ package timedb
 
 import (
     "io"
+    "time"
     "github.com/FlukeNetworks/timedb/delta"
     "code.google.com/p/deltagolomb"
 )
