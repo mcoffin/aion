@@ -3,8 +3,8 @@ package timedb
 import (
     "bytes"
     "math"
-    "math/big"
     "time"
+    "code.google.com/p/deltagolomb"
 )
 
 type Entry struct {
@@ -22,45 +22,37 @@ type BucketData []Entry
 
 func (self BucketData) bucketize(base Entry, precision uint) (bucket, error) {
     buffer := bytes.Buffer{}
+    enc := deltagolomb.NewExpGolombEncoder(&buffer)
 
-    // Multiplier for turning floats in to ints
     multiplier := Value(math.Pow10(int(precision)))
-
-    // Round the baseline
-    basev := int64(base.Value * multiplier)
-    deltas := make([]int, len(self))
-    var maxDelta int = 0
-
-    //Store every delta, keeping track of the biggest one
-    for i, entry := range self {
-        next := int64(entry.Value * multiplier)
-        deltas[i] = int(next - basev)
-        basev = next
-        dabs := deltas[i]
-        if dabs < 0 {
-            dabs = -dabs
-        }
-        if dabs > maxDelta {
-            maxDelta = dabs
-        }
+    last := int64(base.Value * multiplier)
+    for _, entry := range self {
+        v := int64(entry.Value * multiplier)
+        delta := int(v - last)
+        last = v
+        enc.Write([]int{delta})
     }
-
-    // Find the size we'll need to store the deltas
-    maxDeltaBig := big.NewInt(int64(maxDelta))
-    deltaSize := byte(maxDeltaBig.BitLen())
-    deltaSize++ // To store the sign
-
-    // Write the delta size to the buffer
-    buffer.WriteByte(deltaSize)
+    enc.Close()
 
     return buffer.Bytes(), nil
+}
+
+func (self BucketData) bucketBase() Value {
+    sum := Value(0)
+    for _, entry := range self {
+        sum += entry.Value
+    }
+    return sum / Value(len(self))
 }
 
 type BlockData []BucketData
 
 func (self BlockData) bucketBase() Value {
-    // TODO
-    return self[0][0].Value
+    sum := Value(0)
+    for _, bd := range self {
+        sum += bd.bucketBase()
+    }
+    return sum / Value(len(self))
 }
 
 func (self BlockData) Blockify(start time.Time, precision uint) (Block, error) {
