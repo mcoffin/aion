@@ -49,7 +49,7 @@ func (self *Encoder) EncodeTime(value time.Time) int {
 }
 
 type Decoder struct {
-    last float64
+    last int64
     multiplier float64
 }
 
@@ -57,7 +57,7 @@ func NewDecoder(start float64, precision int) *Decoder {
     dec := &Decoder{
         multiplier: math.Pow10(-precision),
     }
-    dec.last = start
+    dec.last = convertFloat64(start, math.Pow10(precision))
     return dec
 }
 
@@ -70,10 +70,19 @@ func (self *Decoder) Decode(values []int) []float64 {
 }
 
 func (self *Decoder) DecodeFloat64(value int) float64 {
-    delta := float64(value) * self.multiplier
-    ret := self.last + delta
+    ret := self.last + int64(value)
     self.last = ret
-    return ret
+    return reverseFloat64(ret, self.multiplier)
+}
+
+func (self *Decoder) DecodeTime(value int) time.Time {
+    ret := self.last + int64(value)
+    self.last = ret
+    return time.Unix(ret, 0)
+}
+
+func reverseFloat64(value int64, multiplier float64) float64 {
+    return float64(value) * multiplier
 }
 
 func convertFloat64(value float64, multiplier float64) int64 {

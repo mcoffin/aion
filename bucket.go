@@ -19,6 +19,19 @@ func newBucketEncoder(base float64, precision int, out io.Writer) *bucketEncoder
     return enc
 }
 
+func newTimeBucketEncoder(base time.Time, out io.Writer) *bucketEncoder {
+    enc := &bucketEncoder{
+        denc: delta.NewTimeEncoder(base),
+        genc: deltagolomb.NewExpGolombEncoder(out),
+    }
+    return enc
+}
+
+func (self *bucketEncoder) WriteTime(value time.Time) {
+    delta := self.denc.EncodeTime(value)
+    self.genc.WriteInt(delta)
+}
+
 func (self *bucketEncoder) WriteFloat64(value float64) {
     delta := self.denc.EncodeFloat64(value)
     self.genc.WriteInt(delta)
