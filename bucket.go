@@ -47,15 +47,33 @@ func (self *bucketEncoder) Close() {
     self.genc.Close()
 }
 
-type bucketDecoder struct {
+type BucketDecoder struct {
     ddec *delta.Decoder
     gdec *deltagolomb.ExpGolombDecoder
 }
 
-func newBucketDecoder(base float64, precision int, in io.Reader) *bucketDecoder {
-    dec := &bucketDecoder{
+func NewBucketDecoder(base float64, precision int, in io.Reader) *BucketDecoder {
+    dec := &BucketDecoder{
         ddec: delta.NewDecoder(base, precision),
         gdec: deltagolomb.NewExpGolombDecoder(in),
     }
     return dec
+}
+
+func (self *BucketDecoder) ReadFloat64() (float64, error) {
+    tmp := make([]int, 1)
+    n, err := self.gdec.Read(tmp)
+    if n > 0 {
+        return self.ddec.DecodeFloat64(tmp[0]), nil
+    }
+    return 0, err
+}
+
+func (self *BucketDecoder) ReadTime() (time.Time, error) {
+    tmp := make([]int, 1)
+    n, err := self.gdec.Read(tmp)
+    if n > 0 {
+        return self.ddec.DecodeTime(tmp[0]), nil
+    }
+    return time.Now(), err
 }

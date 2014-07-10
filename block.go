@@ -47,6 +47,11 @@ func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
     return block
 }
 
+func (self *Block) CreateBucketDecoder(index int) *BucketDecoder {
+    buffer := bytes.NewBuffer(self.buckets[index])
+    return NewBucketDecoder(self.Baseline, self.Precision, buffer)
+}
+
 func (self *Block) createBucketEncoder(out io.Writer) *bucketEncoder {
     return newBucketEncoder(self.Baseline, self.Precision, out)
 }
