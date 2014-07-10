@@ -6,8 +6,6 @@ import (
     "time"
 )
 
-type Value float32
-
 type TimeDB struct {
     Levels []QueryLevel
 }
@@ -40,7 +38,7 @@ func (self *TimeDB) Put(point *InputPoint, t time.Time) error {
 }
 
 type InputPoint struct {
-    Value Value
+    Value float64
     Tags map[string]string
 }
 

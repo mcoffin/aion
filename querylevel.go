@@ -7,7 +7,7 @@ import (
 type QueryLevel struct {
     Duration time.Duration
     Aggregations []AggregationLevel
-    Storer *Storer
+    Storer Storer
 }
 
 type AggregationLevel struct {
