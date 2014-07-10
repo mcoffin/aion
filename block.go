@@ -23,6 +23,7 @@ func (self blockData) blockBase() float64 {
 
 type Block struct {
     buckets [][]byte
+    Start time.Time
     Baseline float64
     Precision int
 }
@@ -32,6 +33,7 @@ func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
     block := &Block{
         buckets: make([][]byte, len(values)),
         Baseline: data.blockBase(),
+        Start: start,
         Precision: precision,
     }
     for i, entries := range values {
@@ -49,9 +51,42 @@ func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
 
 func (self *Block) CreateBucketDecoder(index int) *BucketDecoder {
     buffer := bytes.NewBuffer(self.buckets[index])
-    return NewBucketDecoder(self.Baseline, self.Precision, buffer)
+    if index % 2 == 0 {
+        return NewBucketDecoder(self.Baseline, self.Precision, buffer)
+    } else {
+        return NewTimeBucketDecoder(self.Start, buffer)
+    }
 }
 
 func (self *Block) createBucketEncoder(out io.Writer) *bucketEncoder {
     return newBucketEncoder(self.Baseline, self.Precision, out)
+}
+
+type BlockDecoder struct {
+    vDec *BucketDecoder
+    tDec *BucketDecoder
+}
+
+func (self *Block) CreateBlockDecoder(index int) *BlockDecoder {
+    index *= 2
+    dec := &BlockDecoder{
+        vDec: self.CreateBucketDecoder(index),
+        tDec: self.CreateBucketDecoder(index+1),
+    }
+    return dec
+}
+
+func (self *BlockDecoder) ReadEntry() (Entry, error) {
+    v, err := self.vDec.ReadFloat64()
+    if err != nil {
+        return Entry{}, err
+    }
+    t, err := self.tDec.ReadTime()
+    if err != nil {
+        return Entry{}, err
+    }
+    return Entry{
+        Value: v,
+        Time: t,
+    }, nil
 }

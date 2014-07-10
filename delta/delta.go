@@ -61,6 +61,14 @@ func NewDecoder(start float64, precision int) *Decoder {
     return dec
 }
 
+func NewTimeDecoder(start time.Time) *Decoder {
+    dec := &Decoder{
+        multiplier: 0,
+    }
+    dec.last = start.Unix()
+    return dec
+}
+
 func (self *Decoder) Decode(values []int) []float64 {
     data := make([]float64, len(values))
     for i, value := range values {

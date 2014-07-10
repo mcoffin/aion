@@ -60,6 +60,14 @@ func NewBucketDecoder(base float64, precision int, in io.Reader) *BucketDecoder 
     return dec
 }
 
+func NewTimeBucketDecoder(base time.Time, in io.Reader) *BucketDecoder {
+    dec := &BucketDecoder{
+        ddec: delta.NewTimeDecoder(base),
+        gdec: deltagolomb.NewExpGolombDecoder(in),
+    }
+    return dec
+}
+
 func (self *BucketDecoder) ReadFloat64() (float64, error) {
     tmp := make([]int, 1)
     n, err := self.gdec.Read(tmp)
