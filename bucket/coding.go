@@ -49,10 +49,7 @@ func NewBucketDecoder(start int64, in io.Reader) *BucketDecoder {
 func (self *BucketDecoder) Read(out []int64) (int, error) {
     deltas := make([]int, len(out))
     n, err := self.genc.Read(deltas)
-    if err != nil {
-        return n, err
-    }
-    for i, delta := range deltas {
+    for i, delta := range deltas[:n] {
         self.last += int64(delta)
         out[i] = self.last
     }
