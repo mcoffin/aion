@@ -14,16 +14,17 @@ func TestEncodeDecode(t *testing.T) {
     enc.Write(testVals)
     enc.Close()
     dec := NewBucketDecoder(start, buffer)
-    for i := 0; true; i++ {
-        value, err := dec.Read()
-        if err != nil {
-            if i != len(testVals) {
-                t.Errorf("Breaking at index %d instead of expectation %d\n", i, len(testVals))
-            }
-            break
-        }
-        if value != testVals[i] {
-            t.Errorf("Value %d at index %d doesn't match expectation %d\n", value, i, testVals[i])
+    decoded := make([]int64, len(testVals))
+    n, err := dec.Read(decoded)
+    if err != err {
+        t.Fatal(err)
+    }
+    if n != len(testVals) {
+        t.Fatalf("Read %d values instead of expectation %d\n", n, len(testVals))
+    }
+    for i, decodedValue := range decoded {
+        if decodedValue != testVals[i] {
+            t.Errorf("Decoded value %d at index %d doesn't match expectation %d\n", decodedValue, i, testVals[i])
         }
     }
 }

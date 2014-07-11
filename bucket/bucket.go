@@ -35,24 +35,26 @@ func (self *BucketEncoder) Close() {
 
 type BucketDecoder struct {
     last int64
-    readBuf []int
     genc *deltagolomb.ExpGolombDecoder
 }
 
 func NewBucketDecoder(start int64, in io.Reader) *BucketDecoder {
     dec := &BucketDecoder{
         last: start,
-        readBuf: make([]int, 1),
         genc: deltagolomb.NewExpGolombDecoder(in),
     }
     return dec
 }
 
-func (self *BucketDecoder) Read() (int64, error) {
-    n, err := self.genc.Read(self.readBuf)
-    if err != nil || n <= 0 {
-        return 0, err
+func (self *BucketDecoder) Read(out []int64) (int, error) {
+    deltas := make([]int, len(out))
+    n, err := self.genc.Read(deltas)
+    if err != nil {
+        return n, err
     }
-    self.last += int64(self.readBuf[0])
-    return self.last, nil
+    for i, delta := range deltas {
+        self.last += int64(delta)
+        out[i] = self.last
+    }
+    return n, err
 }
