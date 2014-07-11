@@ -36,6 +36,7 @@ func TestEncodeDecode(t *testing.T) {
         entry, err := dec.Read()
         if err != nil {
             if i != len(data) {
+                t.Log(err)
                 t.Fatalf("Returned %d entries but expected %d\n", i, len(data))
             }
             break

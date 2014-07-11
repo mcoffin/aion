@@ -42,7 +42,7 @@ func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
     for i, entries := range values {
         tBuffer := &bytes.Buffer{}
         vBuffer := &bytes.Buffer{}
-        enc := block.createBlockEncoder(vBuffer, tBuffer)
+        enc := block.createBlockEncoder(tBuffer, vBuffer)
         for _, entry := range entries {
             enc.Write(&entry)
         }
@@ -54,7 +54,7 @@ func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
     return block
 }
 
-func (self *Block) createBlockEncoder(valueWriter, timeWriter io.Writer) *blockEncoder {
+func (self *Block) createBlockEncoder(timeWriter, valueWriter io.Writer) *blockEncoder {
     enc := &blockEncoder{
         multiplier: math.Pow10(self.Precision),
         tEnc: bucket.NewBucketEncoder(self.Start.Unix(), timeWriter),
