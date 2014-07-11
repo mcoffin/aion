@@ -3,7 +3,10 @@ package timedb
 import (
     "bytes"
     "io"
+    "math"
     "time"
+    "github.com/FlukeNetworks/timedb/bucket"
+    "fmt"
 )
 
 type Entry struct {
@@ -31,62 +34,116 @@ type Block struct {
 func NewBlock(start time.Time, precision int, values [][]Entry) *Block {
     data := blockData(values)
     block := &Block{
-        buckets: make([][]byte, len(values)),
+        buckets: make([][]byte, len(values) * 2),
         Baseline: data.blockBase(),
         Start: start,
         Precision: precision,
     }
     for i, entries := range values {
-        buffer := &bytes.Buffer{}
-        enc := block.createBucketEncoder(buffer)
+        tBuffer := &bytes.Buffer{}
+        vBuffer := &bytes.Buffer{}
+        enc := block.createBlockEncoder(vBuffer, tBuffer)
         for _, entry := range entries {
-            enc.WriteFloat64(entry.Value)
+            enc.Write(&entry)
         }
         enc.Close()
-        block.buckets[i] = make([]byte, len(buffer.Bytes()))
-        copy(block.buckets[i], buffer.Bytes())
+        index := 2 * i
+        block.buckets[index] = tBuffer.Bytes()
+        block.buckets[index + 1] = vBuffer.Bytes()
     }
     return block
 }
 
-func (self *Block) CreateBucketDecoder(index int) *BucketDecoder {
-    buffer := bytes.NewBuffer(self.buckets[index])
-    if index % 2 == 0 {
-        return NewBucketDecoder(self.Baseline, self.Precision, buffer)
-    } else {
-        return NewTimeBucketDecoder(self.Start, buffer)
+func (self *Block) createBlockEncoder(valueWriter, timeWriter io.Writer) *blockEncoder {
+    enc := &blockEncoder{
+        multiplier: math.Pow10(self.Precision),
+        tEnc: bucket.NewBucketEncoder(self.Start.Unix(), timeWriter),
     }
+    enc.vEnc = bucket.NewBucketEncoder(int64(self.Baseline * enc.multiplier), valueWriter)
+    return enc
 }
 
-func (self *Block) createBucketEncoder(out io.Writer) *bucketEncoder {
-    return newBucketEncoder(self.Baseline, self.Precision, out)
-}
-
-type BlockDecoder struct {
-    vDec *BucketDecoder
-    tDec *BucketDecoder
+func (self *Block) createBucketDecoder(index int) *bucket.BucketDecoder {
+    buffer := bytes.NewBuffer(self.buckets[index])
+    var start int64
+    if index % 2 == 0 {
+        start = self.Start.Unix()
+    } else {
+        start = int64(self.Baseline * math.Pow10(self.Precision))
+    }
+    return bucket.NewBucketDecoder(start, buffer)
 }
 
 func (self *Block) CreateBlockDecoder(index int) *BlockDecoder {
     index *= 2
     dec := &BlockDecoder{
-        vDec: self.CreateBucketDecoder(index),
-        tDec: self.CreateBucketDecoder(index+1),
+        multiplier: math.Pow10(-self.Precision),
+        tDec: self.createBucketDecoder(index),
+        vDec: self.createBucketDecoder(index + 1),
     }
+    fmt.Printf("Time Bucket: %d\nValue Bucket: %d\n", index, index + 1)
     return dec
 }
 
-func (self *BlockDecoder) ReadEntry() (Entry, error) {
-    v, err := self.vDec.ReadFloat64()
+type blockEncoder struct {
+    multiplier float64
+    vEnc, tEnc *bucket.BucketEncoder
+}
+
+func (self *blockEncoder) writeValue(value float64) {
+    v := int64(value * self.multiplier)
+    fmt.Printf("Writing value %d for %f\n", v, value)
+    self.vEnc.WriteInt(v)
+}
+
+func (self *blockEncoder) writeTime(t time.Time) {
+    v := t.Unix()
+    fmt.Printf("Writing time %d\n", v)
+    self.tEnc.WriteInt(v)
+}
+
+func (self *blockEncoder) Write(entry *Entry) {
+    self.writeValue(entry.Value)
+    self.writeTime(entry.Time)
+}
+
+func (self *blockEncoder) Close() {
+    self.vEnc.Close()
+    self.tEnc.Close()
+}
+
+type BlockDecoder struct {
+    multiplier float64
+    vDec, tDec *bucket.BucketDecoder
+}
+
+func (self *BlockDecoder) readValue() (float64, error) {
+    v, err := self.vDec.Read()
+    if err != nil {
+        return 0, err
+    }
+    return (float64(v) * self.multiplier), nil
+}
+
+func (self *BlockDecoder) readTime() (time.Time, error) {
+    v, err := self.vDec.Read()
+    if err != nil {
+        return time.Now(), err
+    }
+    return time.Unix(v, 0), nil
+}
+
+func (self *BlockDecoder) Read() (Entry, error) {
+    value, err := self.readValue()
     if err != nil {
         return Entry{}, err
     }
-    t, err := self.tDec.ReadTime()
+    t, err := self.readTime()
     if err != nil {
         return Entry{}, err
     }
     return Entry{
-        Value: v,
+        Value: value,
         Time: t,
     }, nil
 }
