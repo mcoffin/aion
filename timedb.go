@@ -18,11 +18,6 @@ type TimeDB struct {
     QueryLevels []QueryLevel
 }
 
-type InputPoint struct {
-    Series uuid.UUID
-    Value float64
-}
-
 func NewTimeDB(qLevels ...QueryLevel) *TimeDB {
     db := &TimeDB{
         QueryLevels: qLevels,
@@ -30,13 +25,13 @@ func NewTimeDB(qLevels ...QueryLevel) *TimeDB {
     return db
 }
 
-func (self *TimeDB) Put(point InputPoint, t time.Time) error {
+func (self *TimeDB) Put(series uuid.UUID, value float64, t time.Time) error {
     entryC := make(chan Entry) // No buffer because we're only sending one value
     errorC := make(chan error)
-    go self.QueryLevels[0].Insert(entryC, point.Series, errorC)
+    go self.QueryLevels[0].Insert(entryC, series, errorC)
     entryC <- Entry{
         Timestamp: time.Now(),
-        Value: point.Value,
+        Value: value,
     }
     close(entryC)
     return <-errorC
