@@ -38,5 +38,6 @@ func (self *TimeDB) Put(point InputPoint, t time.Time) error {
         Timestamp: time.Now(),
         Value: point.Value,
     }
+    close(entryC)
     return <-errorC
 }
