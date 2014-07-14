@@ -51,8 +51,8 @@ func TestCQLCacheQuery(t *testing.T) {
     seriesUUID := uuid.Parse(series)
     start := time.Date(2014, time.January, 1, 0, 0, 0, 0, time.Local)
     duration, err := time.ParseDuration("8760h")
-    fmt.Printf("Start: %v\nEnd: %v\n", start, start.Add(duration))
-    go cache.Query(entryC, seriesUUID, start, duration, errorC)
+    end := start.Add(duration)
+    go cache.Query(entryC, seriesUUID, start, end, errorC)
     for {
         entry, more := <-entryC
         if more {

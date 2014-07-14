@@ -31,8 +31,7 @@ func (self *CQLCache) Insert(entries chan Entry, series uuid.UUID, success chan 
     }
 }
 
-func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, start time.Time, duration time.Duration, success chan error) {
-    end := start.Add(duration)
+func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error) {
     seriesUUID, err := gocql.UUIDFromBytes(series)
     if err != nil {
         success <- err
