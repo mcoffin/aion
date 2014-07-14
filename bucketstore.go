@@ -10,6 +10,11 @@ type BucketStore struct {
     Aggregations []string
 }
 
+func (self *BucketStore) roundTime(t time.Time) time.Time {
+    delta := t.Unix() % int64(self.Duration.Seconds())
+    return time.Unix(t.Unix() - delta, 0)
+}
+
 func (self *BucketStore) bucketIndices(granularity time.Duration, aggregation string) (int, int) {
     index := 0
     delta := 0

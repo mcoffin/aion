@@ -59,5 +59,27 @@ type CQLBucketStoreQuerier struct {
 }
 
 func (self *CQLBucketStoreQuerier) Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error) {
-    // TODO
+    seriesUUID, err := gocql.UUIDFromBytes(series)
+    if  err != nil {
+        success <- err
+        return
+    }
+    tBuf = make([]int64, len(entries))
+    vBuf = make([]int64, len(entries))
+    for {
+        tn, tErr := tDec.Read(tBuf)
+        vn, vErr := vDec.Read(vBuf)
+        if tn == vn && tn > 0 {
+            for i := 0; i < tn; i++ {
+                entries <- Entry{
+                    Timestamp: time.Unix(tBuf[i]),
+                    Value: float64(vBuf[i]) * (1.0 / self.Multiplier),
+                }
+            }
+        }
+        if tErr != nil || vErr != nil {
+            break
+        }
+    }
+    success <- nil
 }
