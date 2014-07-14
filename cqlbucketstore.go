@@ -9,10 +9,9 @@ import (
 )
 
 type CQLBucketStore struct {
-    Duration time.Duration
+    BucketStore
     Session *gocql.Session
     Multiplier float64
-    Granularities []time.Duration
 }
 
 func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success chan error) {
@@ -47,4 +46,18 @@ func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success
             return
         }
     }
+}
+
+func (self *CQLBucketStore) Querier(granularity time.Duration, aggregator string) (Querier, error) {
+    // TODO
+    return nil, nil
+}
+
+type CQLBucketStoreQuerier struct {
+    tDec *bucket.BucketDecoder
+    vDec *bucket.BucketDecoder
+}
+
+func (self *CQLBucketStoreQuerier) Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error) {
+    // TODO
 }
