@@ -1,6 +1,7 @@
 package timedb
 
 import (
+    "time"
     "code.google.com/p/go-uuid/uuid"
     "github.com/gocql/gocql"
 )
@@ -28,4 +29,25 @@ func (self *CQLCache) Insert(entries chan Entry, series uuid.UUID, success chan 
             return
         }
     }
+}
+
+func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, start time.Time, duration time.Duration, success chan error) {
+    end := start.Add(duration)
+    seriesUUID, err := gocql.UUIDFromBytes(series)
+    if err != nil {
+        success <- err
+        return
+    }
+    iter := self.Session.Query("SELECT time, value FROM cache WHERE series = ? AND time > ? AND time < ?", seriesUUID, start, end).Iter()
+    var timestamp time.Time
+    var value float64
+    for iter.Scan(&timestamp, &value) {
+        entries <- Entry{
+            Timestamp: timestamp,
+            Value: value,
+        }
+    }
+    close(entries)
+    err = iter.Close()
+    success <- err
 }

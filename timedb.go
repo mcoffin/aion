@@ -12,6 +12,7 @@ type Entry struct {
 
 type QueryLevel interface {
     Insert(entries chan Entry, series uuid.UUID, success chan error)
+    Query(entries chan Entry, series uuid.UUID, start time.Time, duration time.Duration, success chan error)
 }
 
 type TimeDB struct {
