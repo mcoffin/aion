@@ -10,9 +10,13 @@ type Entry struct {
     Value float64
 }
 
+type Querier interface {
+    Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error)
+}
+
 type QueryLevel interface {
     Insert(entries chan Entry, series uuid.UUID, success chan error)
-    Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error)
+    Querier(granularity time.Duration, aggregator string) (Querier, error)
 }
 
 type TimeDB struct {
