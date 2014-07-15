@@ -1,7 +1,6 @@
 package timedb
 
 import (
-    "errors"
     "time"
     "code.google.com/p/go-uuid/uuid"
     "github.com/gocql/gocql"
@@ -33,16 +32,8 @@ func (self *CQLCache) Insert(entries chan Entry, series uuid.UUID, success chan 
     }
 }
 
-// CQLCache implements the QueryLevel interface
-func (self *CQLCache) Querier(granularity time.Duration, aggregator string) (Querier, error) {
-    if aggregator != "raw" {
-        return nil, errors.New("Attempt to find aggregator on cache")
-    }
-    return self, nil
-}
-
-// CQLCache implements the Querier interface
-func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error) {
+// CQLCache implements the Querier interface - It will ignore the granularity and aggregation arguments
+func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, granularity time.Duration, aggregation string, start time.Time, end time.Time, success chan error) {
     seriesUUID, err := gocql.UUIDFromBytes(series)
     if err != nil {
         success <- err

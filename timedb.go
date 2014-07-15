@@ -11,15 +11,10 @@ type Entry struct {
     Value float64
 }
 
-// Something that can run a query over a span of time for a given series
-type Querier interface {
-    Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error)
-}
-
 // Represents the storage scheme for a type of block
 type QueryLevel interface {
     Insert(entries chan Entry, series uuid.UUID, success chan error)
-    Querier(granularity time.Duration, aggregator string) (Querier, error)
+    Query(entries chan Entry, series uuid.UUID, granularity time.Duration, aggregation string, start time.Time, end time.Time, success chan error)
 }
 
 // Root of the top-level API, contains all information

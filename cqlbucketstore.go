@@ -2,6 +2,8 @@ package timedb
 
 import (
     "bytes"
+    "errors"
+    "io"
     "time"
     "code.google.com/p/go-uuid/uuid"
     "github.com/gocql/gocql"
@@ -14,11 +16,37 @@ type CQLBucketStore struct {
     Multiplier float64
 }
 
+type entryEncoder struct {
+    tEnc, vEnc *bucket.BucketEncoder
+    multiplier float64
+    start time.Time
+    baseline float64
+}
+
+func newEntryEncoder(start time.Time, baseline, multiplier float64, tWriter, vWriter io.Writer) *entryEncoder {
+    enc := &entryEncoder{
+        tEnc: bucket.NewBucketEncoder(start.Unix(), tWriter),
+        vEnc: bucket.NewBucketEncoder(int64(baseline * multiplier), vWriter),
+        multiplier: multiplier,
+        start: start,
+        baseline: baseline,
+    }
+    return enc
+}
+
+func (self *entryEncoder) Write(entry Entry) {
+    self.tEnc.WriteInt(entry.Timestamp.Unix())
+    self.vEnc.WriteInt(int64(entry.Value * self.multiplier))
+}
+
+func (self *entryEncoder) Close() {
+    self.tEnc.Close()
+    self.vEnc.Close()
+}
+
 func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success chan error) {
     seriesUUID, err := gocql.UUIDFromBytes(series)
-    var tEnc, vEnc *bucket.BucketEncoder
-    var tStart time.Time
-    var vStart float64
+    var enc *entryEncoder
     tBuf := &bytes.Buffer{}
     vBuf := &bytes.Buffer{}
     if err != nil {
@@ -28,58 +56,92 @@ func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success
     for {
         entry, more := <-entries
         if more {
-            if tEnc == nil {
-                tEnc = bucket.NewBucketEncoder(entry.Timestamp.Unix(), tBuf)
-                tStart = entry.Timestamp
+            if enc == nil {
+                enc = newEntryEncoder(entry.Timestamp, entry.Value, self.Multiplier, tBuf, vBuf)
             }
-            if vEnc == nil {
-                vEnc = bucket.NewBucketEncoder(int64(entry.Value * self.Multiplier), vBuf)
-                vStart = entry.Value
-            }
-            tEnc.WriteInt(entry.Timestamp.Unix())
-            vEnc.WriteInt(int64(entry.Value * self.Multiplier))
+            enc.Write(entry)
         } else {
-            tEnc.Close()
-            vEnc.Close()
-            err = self.Session.Query("INSERT INTO data (series, duration, start, accuracy, baseline, buckets) VALUES (?, ?, ?, ?, ?, ?)", seriesUUID, self.Duration / time.Second, tStart, self.Multiplier, vStart, [][]byte{tBuf.Bytes(), vBuf.Bytes()}).Exec()
+            enc.Close()
+            err = self.Session.Query("INSERT INTO data (series, duration, start, accuracy, baseline, buckets) VALUES (?, ?, ?, ?, ?, ?)", seriesUUID, self.Duration / time.Second, enc.start, self.Multiplier, enc.baseline, [][]byte{tBuf.Bytes(), vBuf.Bytes()}).Exec()
             success <- err
             return
         }
     }
 }
 
-func (self *CQLBucketStore) Querier(granularity time.Duration, aggregator string) (Querier, error) {
+func (self *CQLBucketStore) bucketIndices(granularity time.Duration, aggregation string) (int, int, error) {
+    var tIndex, vIndex int
+    found := false
+    for i, g := range self.Granularities {
+        if g == granularity {
+            tIndex = i
+            found = true
+        }
+    }
+    if !found {
+        return tIndex, vIndex, errors.New("Invalid granularity")
+    }
+    found = false
+    for i, a := range self.Aggregations {
+        if a == aggregation {
+            vIndex = (tIndex * len(self.Aggregations)) + i
+            found = true
+        }
+    }
+    if !found {
+        return tIndex, vIndex, errors.New("Invalid aggregation")
+    }
+    return tIndex, vIndex, nil
+}
+
+type block struct {
+    tBytes, vBytes []byte
+    start time.Time
+    baseline, multiplier float64
+}
+
+func (self *block) Query(entries chan Entry, start time.Time, end time.Time) error {
     // TODO
-    return nil, nil
+    return nil
 }
 
-type CQLBucketStoreQuerier struct {
-    tDec *bucket.BucketDecoder
-    vDec *bucket.BucketDecoder
-}
-
-func (self *CQLBucketStoreQuerier) Query(entries chan Entry, series uuid.UUID, start time.Time, end time.Time, success chan error) {
+func (self *CQLBucketStore) Query(entries chan Entry, series uuid.UUID, granularity time.Duration, aggregation string, start time.Time, end time.Time, success chan error) {
     seriesUUID, err := gocql.UUIDFromBytes(series)
-    if  err != nil {
+    if err != nil {
         success <- err
         return
     }
-    tBuf = make([]int64, len(entries))
-    vBuf = make([]int64, len(entries))
-    for {
-        tn, tErr := tDec.Read(tBuf)
-        vn, vErr := vDec.Read(vBuf)
-        if tn == vn && tn > 0 {
-            for i := 0; i < tn; i++ {
-                entries <- Entry{
-                    Timestamp: time.Unix(tBuf[i]),
-                    Value: float64(vBuf[i]) * (1.0 / self.Multiplier),
-                }
+    tIndex, vIndex, err := self.bucketIndices(granularity, aggregation)
+    var blk block
+    // If we can't find the right bucket, give raw data
+    if err != nil {
+        iter := self.Session.Query("SELECT time_raw, value_raw, start, baseline, multiplier FROM data WHERE series = ? AND duration = ? AND start >= ? AND start <= ?", seriesUUID, int(self.Duration.Seconds()), self.nearestStart(start), self.nearestStart(end)).Iter()
+        for iter.Scan(&blk.tBytes, &blk.vBytes, &blk.start, &blk.baseline, &blk.multiplier) {
+            err = blk.Query(entries, start, end)
+            if err != nil {
+                success <- err
+                return
             }
         }
-        if tErr != nil || vErr != nil {
-            break
+        if err = iter.Close(); err != nil {
+            success <- err
+            return
+        }
+    } else {
+        var timeBuckets, valueBuckets [][]byte
+        iter := self.Session.Query("SELECT time_aggregated, value_aggregated, start, baseline, multiplier FROM data WHERE series = ? AND duration = ? AND start >= ? AND start <= ?", seriesUUID, int(self.Duration.Seconds()), self.nearestStart(start), self.nearestStart(end)).Iter()
+        for iter.Scan(&timeBuckets, &valueBuckets, &blk.start, &blk.baseline, &blk.multiplier) {
+            blk.tBytes = timeBuckets[tIndex]
+            blk.vBytes = valueBuckets[vIndex]
+            err = blk.Query(entries, start, end)
+            if err != nil {
+                success <- err
+                return
+            }
+        }
+        if err = iter.Close(); err != nil {
+            success <- err
+            return
         }
     }
-    success <- nil
 }
