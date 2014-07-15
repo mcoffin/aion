@@ -101,7 +101,33 @@ type block struct {
 }
 
 func (self *block) Query(entries chan Entry, start time.Time, end time.Time) error {
-    // TODO
+    tBuf := make([]int64, len(entries))
+    vBuf := make([]int64, len(entries))
+
+    tDec := bucket.NewBucketDecoder(self.start.Unix(), bytes.NewBuffer(self.tBytes))
+    vDec := bucket.NewBucketDecoder(int64(self.baseline * self.multiplier), bytes.NewBuffer(self.vBytes))
+
+    for {
+        tn, tErr := tDec.Read(tBuf)
+        vn, vErr := vDec.Read(vBuf)
+        if tn != vn {
+            return errors.New("Mismatched number of times/values")
+        }
+        if tn > 0 {
+            for i := 0; i < tn; i++ {
+                entries <- Entry{
+                    Timestamp: time.Unix(tBuf[i], 0),
+                    Value: float64(vBuf[i]) * self.multiplier,
+                }
+            }
+        }
+        if tErr != nil {
+            return tErr
+        }
+        if vErr != nil {
+            return vErr
+        }
+    }
     return nil
 }
 
