@@ -9,19 +9,16 @@ Data in timedb is stored in **query levels**. A query level contains blocks of d
 
 Additionally, a query level can contain multiple **aggregation levels**. These allow the storage of data at different granularities within the query level.
 
-Information about each query level is stored in the following structs:
+The following struct is used to contain information about a query level and its aggregation levels.
 
 ````go
-type QueryLevel struct {
+type BucketStore struct {
     Duration time.Duration
-    Aggregations []AggregationLevel
-}
-
-type AggregationLevel struct {
-    Period time.Duration
+    Granularities []time.Duration
+    Aggregations []string
 }
 ````
 
 # Data Flow
 
-As data comes in to timedb, it is first *cached* in a default query level.
+As data comes in to timedb, it is first *cached* in a default query level. This default query level has no additional granularities/aggregations, and only contains raw data.
