@@ -129,13 +129,17 @@ func TestCQLBucketStore(t *testing.T) {
     errorC = make(chan error)
 
     go store.Query(entryC, seriesUUID, 0, "raw", roundedTime, roundedTime.Add(60 * time.Second), errorC)
+    i := 0
     for {
         select {
         case ent, more := <-entryC:
             if !more {
                 return
             }
-            fmt.Println(ent)
+            if ent.Value != testBucketValues[i] {
+                t.Errorf("Expected value %v at index %d but found %v\n", testBucketValues[i], i, ent.Value)
+            }
+            i++
         case err = <-errorC:
             if err != nil {
                 t.Fatal(err)
