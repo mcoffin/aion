@@ -38,10 +38,15 @@ func (self *TimeDB) Put(series uuid.UUID, value float64, t time.Time) error {
     entryC := make(chan Entry) // No buffer because we're only sending one value
     errorC := make(chan error)
     go self.QueryLevels[0].Insert(entryC, series, errorC)
-    entryC <- Entry{
+    ent := Entry{
         Timestamp: time.Now(),
         Value: value,
     }
+    var err error
+    select {
+    case entryC <- ent:
+    case err = <-errorC:
+    }
     close(entryC)
-    return <-errorC
+    return err
 }
