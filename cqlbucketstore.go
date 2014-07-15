@@ -57,12 +57,12 @@ func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success
         entry, more := <-entries
         if more {
             if enc == nil {
-                enc = newEntryEncoder(entry.Timestamp, entry.Value, self.Multiplier, tBuf, vBuf)
+                enc = newEntryEncoder(self.nearestStart(entry.Timestamp), entry.Value, self.Multiplier, tBuf, vBuf)
             }
             enc.Write(entry)
         } else {
             enc.Close()
-            err = self.Session.Query("INSERT INTO data (series, duration, start, accuracy, baseline, buckets) VALUES (?, ?, ?, ?, ?, ?)", seriesUUID, self.Duration / time.Second, enc.start, self.Multiplier, enc.baseline, [][]byte{tBuf.Bytes(), vBuf.Bytes()}).Exec()
+            err = self.Session.Query("INSERT INTO data (series, duration, start, multiplier, baseline, time_raw, value_raw) VALUES (?, ?, ?, ?, ?, ?, ?)", seriesUUID, self.Duration / time.Second, enc.start, self.Multiplier, enc.baseline, tBuf.Bytes(), vBuf.Bytes()).Exec()
             success <- err
             return
         }
@@ -101,8 +101,8 @@ type block struct {
 }
 
 func (self *block) Query(entries chan Entry, start time.Time, end time.Time) error {
-    tBuf := make([]int64, len(entries))
-    vBuf := make([]int64, len(entries))
+    tBuf := make([]int64, 64)
+    vBuf := make([]int64, 64)
 
     tDec := bucket.NewBucketDecoder(self.start.Unix(), bytes.NewBuffer(self.tBytes))
     vDec := bucket.NewBucketDecoder(int64(self.baseline * self.multiplier), bytes.NewBuffer(self.vBytes))
@@ -115,11 +115,15 @@ func (self *block) Query(entries chan Entry, start time.Time, end time.Time) err
         }
         if tn > 0 {
             for i := 0; i < tn; i++ {
-                entries <- Entry{
+                ent := Entry{
                     Timestamp: time.Unix(tBuf[i], 0),
-                    Value: float64(vBuf[i]) * self.multiplier,
+                    Value: float64(vBuf[i]) * (1.0 / self.multiplier),
                 }
+                entries <- ent
             }
+        }
+        if tn < len(tBuf) || vn < len(vBuf) {
+            break
         }
         if tErr != nil {
             return tErr
@@ -149,10 +153,7 @@ func (self *CQLBucketStore) Query(entries chan Entry, series uuid.UUID, granular
                 return
             }
         }
-        if err = iter.Close(); err != nil {
-            success <- err
-            return
-        }
+        err = iter.Close()
     } else {
         var timeBuckets, valueBuckets [][]byte
         iter := self.Session.Query("SELECT time_aggregated, value_aggregated, start, baseline, multiplier FROM data WHERE series = ? AND duration = ? AND start >= ? AND start <= ?", seriesUUID, int(self.Duration.Seconds()), self.nearestStart(start), self.nearestStart(end)).Iter()
@@ -165,9 +166,8 @@ func (self *CQLBucketStore) Query(entries chan Entry, series uuid.UUID, granular
                 return
             }
         }
-        if err = iter.Close(); err != nil {
-            success <- err
-            return
-        }
+        err = iter.Close()
     }
+    close(entries)
+    success <- err
 }
