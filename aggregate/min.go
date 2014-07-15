@@ -6,20 +6,20 @@ type MinAggregator struct {
 }
 
 func (self *MinAggregator) Add(value float64) {
-    if empty {
-        min = value
-        empty = false
+    if self.empty {
+        self.min = value
+        self.empty = false
     }
-    if value < min {
-        min = value
+    if value < self.min {
+        self.min = value
     }
 }
 
-func (self *MinAggregator) Value() {
-    return min
+func (self *MinAggregator) Value() float64 {
+    return self.min
 }
 
 func (self *MinAggregator) Reset() {
-    min = 0
-    empty = true
+    self.min = 0
+    self.empty = true
 }
