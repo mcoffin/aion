@@ -94,7 +94,7 @@ func TestCQLBucketStore(t *testing.T) {
         BucketStore{
             Duration: bDuration,
             Granularity: 0,
-            Aggregations: []string{"raw"},
+            Aggregations: []string{"min", "max", "avg"},
             Multiplier: math.Pow10(1),
         },
         session,
@@ -131,7 +131,7 @@ func TestCQLBucketStore(t *testing.T) {
     entryC = make(chan Entry, 5)
     errorC = make(chan error)
 
-    go store.Query(entryC, seriesUUID, "raw", roundedTime, roundedTime.Add(60 * time.Second), errorC)
+    go store.Query(entryC, seriesUUID, "avg", roundedTime, roundedTime.Add(60 * time.Second), errorC)
     i := 0
     for {
         select {
