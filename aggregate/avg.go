@@ -16,5 +16,9 @@ func (self *AvgAggregator) Add(value float64) {
 }
 
 func (self AvgAggregator) Value() float64 {
+    // Optimization for common case of single-value average
+    if self.sum == 1 {
+        return self.count
+    }
     return self.sum / float64(self.count)
 }
