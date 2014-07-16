@@ -21,4 +21,8 @@ type BucketStore struct {
 
 # Data Flow
 
-As data comes in to timedb, it is first *cached* in a default query level. This default query level has no additional granularities/aggregations, and only contains raw data.
+As data comes in to timedb, it is first *cached* in a non-aggregated query level. This default query level has no additional granularities/aggregations, and only contains raw data. Later, the data in the cached query level is "rolled up" and aggregated for storage in the next query level. After another period of time, the data may roll further down into another query level.
+
+##Queries
+
+When a query is made against timedb, a desired granularity must be given, and the system will search for data of the closest granularity it can find, then query against the level that contains that granularity.
