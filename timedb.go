@@ -14,7 +14,7 @@ type Entry struct {
 // Represents the storage scheme for a type of block
 type QueryLevel interface {
     Insert(entries chan Entry, series uuid.UUID, success chan error)
-    Query(entries chan Entry, series uuid.UUID, granularity time.Duration, aggregation string, start time.Time, end time.Time, success chan error)
+    Query(entries chan Entry, series uuid.UUID, aggregation string, start time.Time, end time.Time, success chan error)
 }
 
 // Root of the top-level API, contains all information

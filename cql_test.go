@@ -53,7 +53,7 @@ func TestCQLCacheQuery(t *testing.T) {
     start := time.Date(2014, time.January, 1, 0, 0, 0, 0, time.Local)
     duration, err := time.ParseDuration("8760h")
     end := start.Add(duration)
-    go cache.Query(entryC, seriesUUID, 0, "raw", start, end, errorC)
+    go cache.Query(entryC, seriesUUID, "raw", start, end, errorC)
     for {
         entry, more := <-entryC
         if more {
@@ -93,6 +93,7 @@ func TestCQLBucketStore(t *testing.T) {
     store := &CQLBucketStore{
         BucketStore{
             Duration: bDuration,
+            Aggregations: []string{"raw"},
         },
         session,
         math.Pow10(1),
@@ -128,7 +129,7 @@ func TestCQLBucketStore(t *testing.T) {
     entryC = make(chan Entry, 5)
     errorC = make(chan error)
 
-    go store.Query(entryC, seriesUUID, 0, "raw", roundedTime, roundedTime.Add(60 * time.Second), errorC)
+    go store.Query(entryC, seriesUUID, "raw", roundedTime, roundedTime.Add(60 * time.Second), errorC)
     i := 0
     for {
         select {
