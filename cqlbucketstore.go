@@ -3,45 +3,15 @@ package timedb
 import (
     "bytes"
     "errors"
-    "io"
     "time"
     "code.google.com/p/go-uuid/uuid"
     "github.com/gocql/gocql"
-    "github.com/FlukeNetworks/timedb/bucket"
 )
 
 type CQLBucketStore struct {
     BucketStore
     Session *gocql.Session
     Multiplier float64
-}
-
-type entryEncoder struct {
-    tEnc, vEnc *bucket.BucketEncoder
-    multiplier float64
-    start time.Time
-    baseline float64
-}
-
-func newEntryEncoder(start time.Time, baseline, multiplier float64, tWriter, vWriter io.Writer) *entryEncoder {
-    enc := &entryEncoder{
-        tEnc: bucket.NewBucketEncoder(start.Unix(), tWriter),
-        vEnc: bucket.NewBucketEncoder(int64(baseline * multiplier), vWriter),
-        multiplier: multiplier,
-        start: start,
-        baseline: baseline,
-    }
-    return enc
-}
-
-func (self *entryEncoder) Write(entry Entry) {
-    self.tEnc.WriteInt(entry.Timestamp.Unix())
-    self.vEnc.WriteInt(int64(entry.Value * self.multiplier))
-}
-
-func (self *entryEncoder) Close() {
-    self.tEnc.Close()
-    self.vEnc.Close()
 }
 
 func (self *CQLBucketStore) Insert(entries chan Entry, series uuid.UUID, success chan error) {
@@ -92,47 +62,6 @@ func (self *CQLBucketStore) bucketIndices(granularity time.Duration, aggregation
         return tIndex, vIndex, errors.New("Invalid aggregation")
     }
     return tIndex, vIndex, nil
-}
-
-type block struct {
-    tBytes, vBytes []byte
-    start time.Time
-    baseline, multiplier float64
-}
-
-func (self *block) Query(entries chan Entry, start time.Time, end time.Time) error {
-    tBuf := make([]int64, 64)
-    vBuf := make([]int64, 64)
-
-    tDec := bucket.NewBucketDecoder(self.start.Unix(), bytes.NewBuffer(self.tBytes))
-    vDec := bucket.NewBucketDecoder(int64(self.baseline * self.multiplier), bytes.NewBuffer(self.vBytes))
-
-    for {
-        tn, tErr := tDec.Read(tBuf)
-        vn, vErr := vDec.Read(vBuf)
-        if tn != vn {
-            return errors.New("Mismatched number of times/values")
-        }
-        if tn > 0 {
-            for i := 0; i < tn; i++ {
-                ent := Entry{
-                    Timestamp: time.Unix(tBuf[i], 0),
-                    Value: float64(vBuf[i]) * (1.0 / self.multiplier),
-                }
-                entries <- ent
-            }
-        }
-        if tn < len(tBuf) || vn < len(vBuf) {
-            break
-        }
-        if tErr != nil {
-            return tErr
-        }
-        if vErr != nil {
-            return vErr
-        }
-    }
-    return nil
 }
 
 func (self *CQLBucketStore) Query(entries chan Entry, series uuid.UUID, granularity time.Duration, aggregation string, start time.Time, end time.Time, success chan error) {
