@@ -75,7 +75,7 @@ func TestDateRounding(t *testing.T) {
     store := &BucketStore{
         Duration: 60 * time.Second,
     }
-    rounded := store.nearestStart(d)
+    rounded := d.Truncate(store.Duration)
     if rounded.Second() != 0 {
         t.Errorf("Expected rounded date with 0 seconds but found %v\n", rounded)
     }
@@ -93,11 +93,13 @@ func TestCQLBucketStore(t *testing.T) {
     store := &CQLBucketStore{
         BucketStore{
             Duration: bDuration,
+            Granularity: 0,
             Aggregations: []string{"raw"},
+            Multiplier: math.Pow10(1),
         },
         session,
-        math.Pow10(1),
     }
+    store.Storer = store
     entryC := make(chan Entry, 5)
     errorC := make(chan error)
     baseTime := time.Now()

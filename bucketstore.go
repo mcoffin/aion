@@ -5,48 +5,139 @@ import (
     "errors"
     "io"
     "time"
+    "code.google.com/p/go-uuid/uuid"
     "github.com/FlukeNetworks/timedb/bucket"
+    "github.com/FlukeNetworks/timedb/aggregate"
 )
+
+type BucketStorer interface {
+    StoreBucket(store *BucketStore, times *bytes.Buffer, values []*bytes.Buffer, start time.Time, baseline float64, series uuid.UUID) error
+}
 
 // A representation of a backing store that keeps data in blocks and buckets
 type BucketStore struct {
     Duration time.Duration
-    Granularities []time.Duration
+    Granularity time.Duration
     Aggregations []string
+    Multiplier float64
+    Storer BucketStorer
 }
 
-// Rounds a time based on the duration of this BucketStore
-func (self *BucketStore) nearestStart(t time.Time) time.Time {
-    delta := t.Unix() % int64(self.Duration.Seconds())
-    return time.Unix(t.Unix() - delta, 0)
+func (self *BucketStore) createAggregators() ([]aggregate.Aggregator, error) {
+    aggregators := make([]aggregate.Aggregator, len(self.Aggregations))
+    var err error
+    for i, aggregation := range self.Aggregations {
+        aggregators[i], err = aggregate.NewAggregator(aggregation)
+        if err != nil {
+            return aggregators, err
+        }
+    }
+    return aggregators, nil
 }
 
-type entryEncoder struct {
-    tEnc, vEnc *bucket.BucketEncoder
-    multiplier float64
+func (self *BucketStore) bucketIndex(aggregation string) (int, error) {
+    for i, a := range self.Aggregations {
+        if a == aggregation {
+            return i, nil
+        }
+    }
+    return 0, errors.New("Can't find aggregation")
+}
+
+func (self *BucketStore) Insert(entries chan Entry, series uuid.UUID, success chan error) {
+    aggregators, err := self.createAggregators()
+    if err != nil {
+        success <- err
+        return
+    }
+
+    tBuf := &bytes.Buffer{}
+    var tEnc *timeEncoder
+    vBufs := make([]*bytes.Buffer, len(aggregators))
+    vEncs := make([]*valueEncoder, len(aggregators))
+    isFirst := true
+    var start time.Time
+    var rollupStart, rollupEnd time.Time
+    var baseline float64
+    for {
+        entry, more := <-entries
+        if more {
+            if isFirst {
+                start = entry.Timestamp.Truncate(self.Duration)
+                tEnc = newTimeEncoder(start, tBuf)
+                rollupStart = entry.Timestamp.Truncate(self.Granularity)
+                rollupEnd = rollupStart.Add(self.Granularity)
+
+                baseline = entry.Value
+                for i, _ := range aggregators {
+                    vBufs[i] = &bytes.Buffer{}
+                    vEncs[i] = newValueEncoder(baseline, self.Multiplier, vBufs[i])
+                }
+            }
+            if (entry.Timestamp.After(rollupEnd) || entry.Timestamp.Equal(rollupEnd)) && !isFirst {
+                tEnc.Write(rollupStart)
+                for i, aggregator := range aggregators {
+                    vEncs[i].Write(aggregator.Value())
+                    aggregator.Reset()
+                }
+                rollupStart = entry.Timestamp.Truncate(self.Granularity)
+                rollupEnd = rollupStart.Add(self.Granularity)
+            }
+            for _, aggregator := range aggregators {
+                aggregator.Add(entry.Value)
+            }
+            isFirst = false
+        } else {
+            tEnc.Close()
+            for _, enc := range vEncs {
+                enc.Close()
+            }
+            err = self.Storer.StoreBucket(self, tBuf, vBufs, tEnc.start, baseline, series)
+            success <- err
+        }
+    }
+}
+
+type timeEncoder struct {
+    enc *bucket.BucketEncoder
     start time.Time
-    baseline float64
 }
 
-func newEntryEncoder(start time.Time, baseline, multiplier float64, tWriter, vWriter io.Writer) *entryEncoder {
-    enc := &entryEncoder{
-        tEnc: bucket.NewBucketEncoder(start.Unix(), tWriter),
-        vEnc: bucket.NewBucketEncoder(int64(baseline * multiplier), vWriter),
-        multiplier: multiplier,
+func newTimeEncoder(start time.Time, writer io.Writer) *timeEncoder {
+    enc := &timeEncoder{
+        enc: bucket.NewBucketEncoder(start.Unix(), writer),
         start: start,
-        baseline: baseline,
     }
     return enc
 }
 
-func (self *entryEncoder) Write(entry Entry) {
-    self.tEnc.WriteInt(entry.Timestamp.Unix())
-    self.vEnc.WriteInt(int64(entry.Value * self.multiplier))
+func (self *timeEncoder) Write(t time.Time) {
+    self.enc.WriteInt(t.Unix())
 }
 
-func (self *entryEncoder) Close() {
-    self.tEnc.Close()
-    self.vEnc.Close()
+func (self *timeEncoder) Close() {
+    self.enc.Close()
+}
+
+type valueEncoder struct {
+    enc *bucket.BucketEncoder
+    multiplier float64
+}
+
+func newValueEncoder(baseline float64, multiplier float64, writer io.Writer) *valueEncoder {
+    enc := &valueEncoder{
+        multiplier: multiplier,
+        enc: bucket.NewBucketEncoder(int64(baseline * multiplier), writer),
+    }
+    return enc
+}
+
+func (self *valueEncoder) Write(v float64) {
+    self.enc.WriteInt(int64(v * self.multiplier))
+}
+
+func (self *valueEncoder) Close() {
+    self.enc.Close()
 }
 
 type block struct {
