@@ -18,7 +18,7 @@ func (self *RawAggregator) Add(v float64) {
     self.value = v
 }
 
-func (self *RawAggregator) Value() float64 {
+func (self RawAggregator) Value() float64 {
     return self.value
 }
 
@@ -27,10 +27,19 @@ func (self *RawAggregator) Reset() {
 }
 
 func NewAggregator(aggregation string) (Aggregator, error) {
+    var a Aggregator
     switch aggregation {
     case "raw":
-        return &RawAggregator{0}, nil
+        a = new(RawAggregator)
+    case "min":
+        a = new(MinAggregator)
+    case "max":
+        a = new(MaxAggregator)
+    case "avg":
+        a = new(AvgAggregator)
     default:
         return nil, fmt.Errorf("Can't find aggregator %s", aggregation)
     }
+    a.Reset()
+    return a, nil
 }
