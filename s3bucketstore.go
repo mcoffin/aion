@@ -19,17 +19,17 @@ func (self S3BucketStore) s3BlockPath(series uuid.UUID, start time.Time) string 
 }
 
 type s3BucketHeader struct {
-    multiplier float64
-    baseline float64
-    aggregators uint16
+    Multiplier float64
+    Baseline float64
+    Aggregators uint16
 }
 
 func (self *S3BucketStore) StoreBucket(store *BucketStore, times *bytes.Buffer, values []*bytes.Buffer, start time.Time, baseline float64, series uuid.UUID) error {
     fileBuf := new(bytes.Buffer)
     header := s3BucketHeader{
-        multiplier: self.Multiplier,
-        baseline: baseline,
-        aggregators: uint16(len(values)),
+        Multiplier: self.Multiplier,
+        Baseline: baseline,
+        Aggregators: uint16(len(values)),
     }
     err := binary.Write(fileBuf, binary.LittleEndian, &header)
     if err != nil {
@@ -54,7 +54,7 @@ func (self *S3BucketStore) StoreBucket(store *BucketStore, times *bytes.Buffer, 
 }
 
 func (self *S3BucketStore) Query(entries chan Entry, series uuid.UUID, aggregation string, start time.Time, end time.Time, success chan error) {
-    for currentTime := start.Truncate(self.Duration); !currentTime.After(end); currentTime = currentTime.Add(self.Duration) {
+    for currentTime := start.Truncate(self.Duration); !currentTime.After(end) && !currentTime.Equal(end); currentTime = currentTime.Add(self.Duration) {
         bytes, err := self.Bucket.Get(self.s3BlockPath(series, currentTime))
         if err != nil {
             success <- err
@@ -66,6 +66,8 @@ func (self *S3BucketStore) Query(entries chan Entry, series uuid.UUID, aggregati
             return
         }
     }
+    close(entries)
+    success <- nil
 }
 
 func (self *S3BucketStore) queryBucket(entries chan Entry, data []byte, aggregation string, start time.Time, end time.Time) error {
@@ -77,7 +79,7 @@ func (self *S3BucketStore) queryBucket(entries chan Entry, data []byte, aggregat
         return err
     }
     err = binary.Read(reader, binary.LittleEndian, &tLen)
-    vBufs := make([][]byte, header.aggregators)
+    vBufs := make([][]byte, header.Aggregators)
     for i, _ := range vBufs {
         var vLen uint16
         err = binary.Read(reader, binary.LittleEndian, &vLen)
@@ -105,8 +107,8 @@ func (self *S3BucketStore) queryBucket(entries chan Entry, data []byte, aggregat
         tBytes: tBuf,
         vBytes: vBufs[index],
         start: start,
-        baseline: header.baseline,
-        multiplier: header.multiplier,
+        baseline: header.Baseline,
+        multiplier: header.Multiplier,
     }
     return block.Query(entries, start, end)
 }
