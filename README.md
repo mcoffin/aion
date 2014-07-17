@@ -1,28 +1,47 @@
 timedb
 ======
 
-Cascading time series database with fast tags based on Cassandra
+Cascading time series database with fast tags
 
 # Architecture
 
-Data in timedb is stored in **query levels**. A query level contains blocks of differentially encoded data over a time span. Each of these blocks of data is called a **bucket**. Ideally, a query level is of a duration such that when a bucket is queried out, the entire bucket of data was desired in the query. If the entire bucket is used for the query, then no additional data transfer overhead was added by transferring the entire bucket instead of just the required data.
+Data in timedb is stored in **query levels**. A query level represents a scheme from both inserting and querying data from some kind of storage.
 
-Additionally, a query level can contain multiple **aggregation levels**. These allow the storage of data at different granularities within the query level.
+Each query level must implement the following interface.
 
-The following struct is used to contain information about a query level and its aggregation levels.
+````go
+type QueryLevel interface {
+    Insert(entries chan Entry, series uuid.UUID, success chan error)
+    Query(entries chan Entry, series uuid.UUID, aggregation string, start time.Time, end time.Time, success chan error)
+}
+````
+
+## Common Query Levels
+
+While implementations can define any kind of query level they desire, there are two very common kinds of query levels: the **cache**, and a number of **bucketized levels**. As data comes in to timedb, it will be stored in the cache. When enough data has accumulated there, it is rolled up to the first bucketized level. When enough data accumulates in that level, it will be rolled up in to the next level, and so on and so forth.
+
+this is the aspect of timedb that is considered to be **cascading**.
+
+### Cache
+
+The first query level in timedb is often some kind of a cache. The cache takes in raw data points, and stores them as is. This allows for fast access to the data, and provides interim storage until the data can be archived into a bucketized level.
+
+### Bucketized Levels
+
+After enough data exists in some previous query level, data can be *rolled up* in to bucketized levels.
+
+A bucketized level contains blocks of differentially encoded data over a time span. All blocks within a bucketized level have the same **duration**, and all data has a maximum **granularity**. For example, a bucketized level might be defined to keep 1min granularity data in 2hr blocks.
+
+Each block contains multiple **aggregations** of finer data. In the above example, a block that contains 1min granularity data in 2hr blocks might contain the `min`, `max`, and `avg` of the data for each minute.
+
+Each bucketized level can be configured by the following struct.
 
 ````go
 type BucketStore struct {
     Duration time.Duration
-    Granularities []time.Duration
+    Granularity time.Duration
     Aggregations []string
+    Multiplier float64
+    Storer BucketStorer
 }
 ````
-
-# Data Flow
-
-As data comes in to timedb, it is first *cached* in a non-aggregated query level. This default query level has no additional granularities/aggregations, and only contains raw data. Later, the data in the cached query level is "rolled up" and aggregated for storage in the next query level. After another period of time, the data may roll further down into another query level.
-
-##Queries
-
-When a query is made against timedb, a desired granularity must be given, and the system will search for data of the closest granularity it can find, then query against the level that contains that granularity.
