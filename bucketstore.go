@@ -88,6 +88,10 @@ func (self *BucketStore) Insert(entries chan Entry, series uuid.UUID, success ch
             }
             isFirst = false
         } else {
+            tEnc.Write(rollupStart)
+            for i, aggregator := range aggregators {
+                vEncs[i].Write(aggregator.Value())
+            }
             tEnc.Close()
             for _, enc := range vEncs {
                 enc.Close()

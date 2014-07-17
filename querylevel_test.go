@@ -3,7 +3,6 @@ package timedb
 import (
     "testing"
     "time"
-    "fmt"
     "code.google.com/p/go-uuid/uuid"
 )
 
@@ -63,10 +62,9 @@ func testQueryLevel(store QueryLevel, t *testing.T) {
                 return
             }
             if ent.Value != testBucketValues[i] {
-//                t.Errorf("Expected value %v at index %d but found %v\n", testBucketValues[i], i, ent.Value)
+                t.Errorf("Expected value %v at index %d but found %v\n", testBucketValues[i], i, ent.Value)
             }
             i++
-            fmt.Printf("Checked entry %d\n", i)
         case err = <-errorC:
             if err != nil {
                 t.Fatal(err)
