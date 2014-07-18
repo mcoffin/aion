@@ -15,6 +15,7 @@ type Entry struct {
 type QueryLevel interface {
     Insert(entries chan Entry, series uuid.UUID, success chan error)
     Query(entries chan Entry, series uuid.UUID, aggregation string, start time.Time, end time.Time, success chan error)
+    RollupAggregation(targetAggregation string) string
 }
 
 // Root of the top-level API, contains all information

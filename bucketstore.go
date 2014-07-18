@@ -102,6 +102,15 @@ func (self *BucketStore) Insert(entries chan Entry, series uuid.UUID, success ch
     }
 }
 
+func (self BucketStore) RollupAggregation(targetAggregation string) string {
+    for _, a := range self.Aggregations {
+        if a == targetAggregation {
+            return a
+        }
+    }
+    return self.Aggregations[0]
+}
+
 type timeEncoder struct {
     enc *bucket.BucketEncoder
     start time.Time
