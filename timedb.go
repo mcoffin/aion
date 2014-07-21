@@ -5,48 +5,53 @@ import (
     "code.google.com/p/go-uuid/uuid"
 )
 
+const (
+    channelSize = 4
+)
+
 // One entry in a time series
 type Entry struct {
+    Series uuid.UUID
     Timestamp time.Time
     Value float64
 }
 
-// Represents the storage scheme for a type of block
 type QueryLevel interface {
-    Insert(entries chan Entry, series uuid.UUID, success chan error)
-    Query(entries chan Entry, series uuid.UUID, aggregation string, start time.Time, end time.Time, success chan error)
+    Insert(entries chan Entry, errors chan error)
 }
 
-// Root of the top-level API, contains all information
-// for the configuration of a single TimeDB instance
 type TimeDB struct {
     QueryLevels []QueryLevel
+    entryChannels []chan Entry
+    errorChannels []chan error
 }
 
-// Creates a new TimeDB from the user-defined
-// query levels
 func NewTimeDB(qLevels ...QueryLevel) *TimeDB {
     db := &TimeDB{
         QueryLevels: qLevels,
+        entryChannels: make([]chan Entry, len(qLevels),
+        errorChannels: make([]chan error, len(qLevels),
     }
     return db
 }
 
-// Convenience method to insert a new data point in to the first QueryLevel of the TimeDB
-// (usually the cache)
-func (self *TimeDB) Put(series uuid.UUID, value float64, t time.Time) error {
-    entryC := make(chan Entry) // No buffer because we're only sending one value
-    errorC := make(chan error)
-    go self.QueryLevels[0].Insert(entryC, series, errorC)
-    ent := Entry{
-        Timestamp: time.Now(),
-        Value: value,
+func (self *TimeDB) Start() {
+    for i, level := range self.QueryLevels {
+        self.entryChannels[i] = make(chan Entry, channelSize)
+        self.errorChannels[i] = make(chan error)
+        go level.Insert(self.entryChannels[i], self.errorChannels[i])
     }
-    var err error
-    select {
-    case entryC <- ent:
-    case err = <-errorC:
+}
+
+func (self *TimeDB) Put(entry Entry) error {
+    for _, entries := range self.entryChannels {
+        entries <- entry
     }
-    close(entryC)
-    return err
+    for _, errors := range self.errorChannels {
+        err := <-errors
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }

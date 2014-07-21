@@ -44,6 +44,16 @@ func (self *BucketStore) bucketIndex(aggregation string) (int, error) {
     return 0, errors.New("Can't find aggregation")
 }
 
+func (self *BucketStore) Insert(entries chan Entry, errors chan error) {
+    for {
+        entry, more := <-entries
+        if !more {
+            return
+        }
+        start := entry.Timestamp.Truncate(self.Duration)
+    }
+}
+
 func (self *BucketStore) Insert(entries chan Entry, series uuid.UUID, success chan error) {
     aggregators, err := self.createAggregators()
     if err != nil {
