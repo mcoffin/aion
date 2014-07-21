@@ -52,7 +52,3 @@ func (self *CQLCache) Query(entries chan Entry, series uuid.UUID, aggregation st
     err = iter.Close()
     success <- err
 }
-
-func (self CQLCache) RollupAggregation(targetAggregation string) string {
-    return "raw"
-}
