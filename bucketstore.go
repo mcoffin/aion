@@ -3,6 +3,7 @@ package timedb
 import (
     "bytes"
     "time"
+    "code.google.com/p/go-uuid/uuid"
     "github.com/FlukeNetworks/timedb/aggregate"
     "github.com/FlukeNetworks/timedb/bucket"
 )
@@ -51,11 +52,11 @@ func (self BucketStore) marshalFloat(v float64) int64 {
 }
 
 func (self *BucketStore) flushAggregators() {
-    timeEncoder.WriteInt(self.aContext.start.Unix())
-    for name, enc := range encoders {
+    self.timeEncoder.WriteInt(self.aContext.start.Unix())
+    for name, enc := range self.encoders {
         enc.WriteInt(self.marshalFloat(self.Aggregators[name].Value()))
     }
-    self.aContext.reset(self.aContext.end)
+    self.aContext.reset(self.aContext.end, self.Granularity)
     self.resetAggregators()
 }
 
@@ -69,9 +70,10 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry, aggregator string
             self.encoders = make(map[string]*bucket.BucketEncoder)
         }
         self.timeBuffer = new(bytes.Buffer)
-        self.timeEncoder = bucket.NewBucketEncoder(start, self.timeBuffer)
+        self.timeEncoder = bucket.NewBucketEncoder(start.Unix(), self.timeBuffer)
         for name, _ := range self.Aggregators {
-            self.buffers[name] = new(bytes.Buffer)
+            buf := new(bytes.Buffer)
+            self.buffers[name] = buf
             self.encoders[name] = bucket.NewBucketEncoder(self.marshalFloat(entry.Value), buf)
         }
     } else {
