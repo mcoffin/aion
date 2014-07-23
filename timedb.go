@@ -5,27 +5,27 @@ import (
     "code.google.com/p/go-uuid/uuid"
 )
 
-const (
-    channelSize = 4
-)
-
 // One entry in a time series
 type Entry struct {
     Timestamp time.Time
-    Value float64
+    Attributes map[string]float64
 }
 
-type SeriesStore interface {
-    Insert(series uuid.UUID, entry Entry, aggregator string) error
+type Level interface {
+    Insert(series uuid.UUID, entry Entry) error
+    SetCascadeCallback(cb (func(uuid.UUID, Entry) error))
 }
 
 type TimeDB struct {
-    Stores []SeriesStore
+    Levels []Level
 }
 
-func NewTimeDB(qLevels ...QueryLevel) *TimeDB {
-    db := &TimeDB{
-        QueryLevels: qLevels,
+func (self *TimeDB) createCallbacks() {
+    for i := 0; i < len(self.Levels) - 1; i++ {
+        self.Levels[i].SetCascadeCallback(self.Levels[i+1].Insert)
     }
-    return db
+}
+
+func (self *TimeDB) Put(series uuid.UUID, entry Entry) error {
+    return self.Levels[0].Insert(series, entry)
 }
