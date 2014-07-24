@@ -9,12 +9,14 @@ import (
 type AggregationFilter struct {
 	Granularity time.Duration
 	aggregators map[string][]aggregate.Aggregator
-	handler func(uuid.UUID, Entry)
+	handler (func(uuid.UUID, Entry) error)
 }
 
-func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) {
+func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
+	// TODO
+	return nil
 }
 
-func (self *AggregationFilter) SetHandler(handler func(uuid.UUID, Entry)) {
+func (self *AggregationFilter) SetHandler(handler (func(uuid.UUID, Entry) error)) {
 	self.handler = handler
 }
