@@ -1,9 +1,9 @@
 package timedb
 
 import (
-	"time"
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/timedb/aggregate"
+	"time"
 )
 
 type aggregationContext struct {
@@ -16,11 +16,11 @@ func (self *aggregationContext) reset(t time.Time, granularity time.Duration) {
 }
 
 type AggregationFilter struct {
-	Granularity time.Duration
+	Granularity  time.Duration
 	Aggregations []string
-	aggregators map[string]map[string]aggregate.Aggregator
-	aContexts map[string]*aggregationContext
-	handler (func(uuid.UUID, Entry) error)
+	aggregators  map[string]map[string]aggregate.Aggregator
+	aContexts    map[string]*aggregationContext
+	handler      (func(uuid.UUID, Entry) error)
 }
 
 func (self *AggregationFilter) Init() {
@@ -50,7 +50,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	aggregators := self.aggregators[seriesStr]
 	if entry.Timestamp.After(self.aContexts[seriesStr].end) {
 		e := Entry{
-			Timestamp: self.aContexts[seriesStr].start,
+			Timestamp:  self.aContexts[seriesStr].start,
 			Attributes: make(map[string]float64),
 		}
 		for name, a := range aggregators {
@@ -68,6 +68,6 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	return err
 }
 
-func (self *AggregationFilter) SetHandler(handler (func(uuid.UUID, Entry) error)) {
+func (self *AggregationFilter) SetHandler(handler func(uuid.UUID, Entry) error) {
 	self.handler = handler
 }

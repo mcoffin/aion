@@ -1,9 +1,9 @@
 package timedb
 
 import (
+	"code.google.com/p/go-uuid/uuid"
 	"testing"
 	"time"
-	"code.google.com/p/go-uuid/uuid"
 )
 
 var testData = []float64{79.1, 80.0, 78.2, 43.1, 90.7, 90.7}
@@ -26,7 +26,7 @@ func testFilter(f Filter, t *testing.T) {
 	current := time.Now()
 	for _, v := range testData {
 		e := Entry{
-			Timestamp: current,
+			Timestamp:  current,
 			Attributes: map[string]float64{"raw": v},
 		}
 		f.Insert(seriesUUID, e)

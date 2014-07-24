@@ -13,7 +13,7 @@ type Entry struct {
 
 type Filter interface {
 	Insert(series uuid.UUID, entry Entry) error
-	SetHandler(handler (func(uuid.UUID, Entry) error))
+	SetHandler(handler func(uuid.UUID, Entry) error)
 }
 
 type SeriesStore interface {
@@ -22,7 +22,7 @@ type SeriesStore interface {
 
 type Level struct {
 	Filter Filter
-	Store SeriesStore
+	Store  SeriesStore
 }
 
 type TimeDB struct {
@@ -30,7 +30,7 @@ type TimeDB struct {
 }
 
 func (self *TimeDB) createHandlers() {
-	for i := 0; i < len(self.Levels) - 1; i++ {
+	for i := 0; i < len(self.Levels)-1; i++ {
 		thisLevel := self.Levels[i]
 		nextLevel := self.Levels[i+1]
 		thisLevel.Filter.SetHandler(func(series uuid.UUID, entry Entry) error {

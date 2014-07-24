@@ -6,7 +6,7 @@ import (
 
 func TestCacheFilter(t *testing.T) {
 	filter := AggregationFilter{
-		Granularity: 0,
+		Granularity:  0,
 		Aggregations: []string{"raw"},
 	}
 	filter.Init()

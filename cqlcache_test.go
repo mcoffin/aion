@@ -1,8 +1,8 @@
 package timedb
 
 import (
-	"testing"
 	"github.com/gocql/gocql"
+	"testing"
 )
 
 func TestCQLCache(t *testing.T) {
@@ -17,13 +17,13 @@ func TestCQLCache(t *testing.T) {
 		Session: session,
 	}
 	filter := AggregationFilter{
-		Granularity: 0,
+		Granularity:  0,
 		Aggregations: []string{"raw"},
 	}
 	filter.Init()
 	level := Level{
 		Filter: &filter,
-		Store: &cache,
+		Store:  &cache,
 	}
 	testLevel(&level, t)
 }
