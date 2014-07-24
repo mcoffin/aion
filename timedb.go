@@ -11,21 +11,31 @@ type Entry struct {
 	Attributes map[string]float64
 }
 
-type Level interface {
-	Insert(series uuid.UUID, entry Entry) error
-	SetCascadeCallback(cb func(uuid.UUID, Entry) error)
+type Filter interface {
+	Insert(series uuid.UUID, entry Entry)
+	SetHandler(handler func(uuid.UUID, Entry))
+}
+
+type SeriesStore interface {
+}
+
+type Level struct {
+	Filter Filter
+	Store SeriesStore
 }
 
 type TimeDB struct {
 	Levels []Level
 }
 
-func (self *TimeDB) createCallbacks() {
-	for i := 0; i < len(self.Levels)-1; i++ {
-		self.Levels[i].SetCascadeCallback(self.Levels[i+1].Insert)
+func (self *TimeDB) createHandlers() {
+	for i := 0; i < len(self.Levels) - 1; i++ {
+		nextFilter := self.Levels[i+1].Filter
+		self.Levels[i].Filter.SetHandler(nextFilter.Insert)
 	}
 }
 
 func (self *TimeDB) Put(series uuid.UUID, entry Entry) error {
-	return self.Levels[0].Insert(series, entry)
+	self.Levels[0].Filter.Insert(series, entry)
+	return nil
 }
