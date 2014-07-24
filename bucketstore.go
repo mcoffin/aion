@@ -12,15 +12,35 @@ type bucketStoreContext struct {
 	encoder            *bucket.BucketEncoder
 }
 
+// Destroys the back buffer, replaces it with the front buffer,
+// then creates a new front buffer
+func (self *bucketStoreContext) swapBuffers() {
+	self.lastBuffer = self.buffer
+	self.buffer = &bytes.Buffer{}
+}
+
 type BucketStore struct {
 	Duration   time.Duration
 	Multiplier float64
 	contexts   map[string]map[string]*bucketStoreContext
+	endTimes   map[string]*time.Time
 }
 
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
-	contexts := self.contexts[series.String()]
-	// TODO: rollup if necessary
+	seriesStr := series.String()
+	contexts := self.contexts[seriesStr]
+	if contexts == nil {
+		contexts = map[string]*bucketStoreContext{}
+		self.contexts[seriesStr] = contexts
+	}
+	if endTimes[seriesStr] == nil {
+		endTimes[seriesStr] = entry.Timestamp.Truncate(self.Duration)
+	} else if entry.Timestamp.After(endTimes[seriesStr]) {
+		for name, ctx := range contexts {
+			ctx.swapBuffers()
+		}
+		// TODO write the backbufs to disk
+	}
 	// Write all attributes to their encoders
 	for k, v := range entry.Attributes {
 		ctx := contexts[k]
