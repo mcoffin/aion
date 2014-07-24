@@ -37,7 +37,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 		ctx.reset(entry.Timestamp, self.Granularity)
 		self.aContexts[seriesStr] = ctx
 
-		aggs := make(map[string]aggregate.Aggregator)
+		aggs := map[string]aggregate.Aggregator{}
 		for _, name := range self.Aggregations {
 			a, err := aggregate.NewAggregator(name)
 			if err != nil {
@@ -51,7 +51,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	if entry.Timestamp.After(self.aContexts[seriesStr].end) {
 		e := Entry{
 			Timestamp:  self.aContexts[seriesStr].start,
-			Attributes: make(map[string]float64),
+			Attributes: map[string]float64{},
 		}
 		for name, a := range aggregators {
 			e.Attributes[name] = a.Value()
