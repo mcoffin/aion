@@ -5,10 +5,12 @@ import (
 	"github.com/gocql/gocql"
 )
 
+// Represents a Cassandra cache
 type CQLCache struct {
 	Session *gocql.Session
 }
 
+// CQLCache implements the SeriesStore interface
 func (self *CQLCache) Insert(series uuid.UUID, entry Entry) error {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
