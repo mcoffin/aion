@@ -19,27 +19,36 @@ func (self *bucketStoreContext) swapBuffers() {
 	self.buffer = &bytes.Buffer{}
 }
 
+type BucketRepository interface {
+	Put(contexts map[string]*bucketStoreContext, store *BucketStore) error
+}
+
 type BucketStore struct {
 	Duration   time.Duration
 	Multiplier float64
+	Repository BucketRepository
 	contexts   map[string]map[string]*bucketStoreContext
 	endTimes   map[string]*time.Time
 }
 
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
+	var err error
 	seriesStr := series.String()
 	contexts := self.contexts[seriesStr]
 	if contexts == nil {
 		contexts = map[string]*bucketStoreContext{}
 		self.contexts[seriesStr] = contexts
 	}
-	if endTimes[seriesStr] == nil {
-		endTimes[seriesStr] = entry.Timestamp.Truncate(self.Duration)
-	} else if entry.Timestamp.After(endTimes[seriesStr]) {
-		for name, ctx := range contexts {
+	if self.endTimes[seriesStr] == nil {
+		tmp := entry.Timestamp.Truncate(self.Duration)
+		self.endTimes[seriesStr] = &tmp
+	} else if entry.Timestamp.After(*self.endTimes[seriesStr]) {
+		for _, ctx := range contexts {
 			ctx.swapBuffers()
+			ctx.encoder.Close()
 		}
-		// TODO write the backbufs to disk
+		err = self.Repository.Put(contexts, self)
+		self.endTimes[seriesStr] = nil
 	}
 	// Write all attributes to their encoders
 	for k, v := range entry.Attributes {
@@ -53,7 +62,7 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 		}
 		contexts[k].encoder.WriteInt(marshalFloat64(v, self.Multiplier))
 	}
-	return nil
+	return err
 }
 
 func marshalFloat64(v float64, multiplier float64) int64 {
