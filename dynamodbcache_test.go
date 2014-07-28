@@ -13,7 +13,7 @@ func TestDynamoDBCache(t *testing.T) {
 	}
 	server := dynamodb.Server{
 		Auth:   auth,
-		Region: aws.USWest,
+		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
 	}
 	pk := dynamodb.PrimaryKey{
 		KeyAttribute: &dynamodb.Attribute{
