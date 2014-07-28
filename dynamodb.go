@@ -2,9 +2,47 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"encoding/base64"
 	"fmt"
 	"github.com/crowdmob/goamz/dynamodb"
+	"time"
 )
+
+type DynamoDBStore struct {
+	BucketStore
+	DynamoDBRepository
+}
+
+func NewDynamoDBStore(store BucketStore, table *dynamodb.Table) *DynamoDBStore {
+	ret := &DynamoDBStore{
+		store,
+		DynamoDBRepository{
+			Table: table,
+		},
+	}
+	ret.Repository = ret
+	return ret
+}
+
+type DynamoDBRepository struct {
+	Table *dynamodb.Table
+}
+
+func (self *DynamoDBRepository) Put(series uuid.UUID, start time.Time, contexts map[string]*bucketStoreContext, store *BucketStore) error {
+	attribs := make([]dynamodb.Attribute, len(contexts))
+	i := 0
+	for name, ctx := range contexts {
+		attribs[i] = dynamodb.Attribute{
+			Type:  "B",
+			Name:  name,
+			Value: base64.StdEncoding.EncodeToString(ctx.lastBuffer.Bytes()),
+		}
+		i++
+	}
+	// I really wish dynamodb had multiple-attribute keys because this manual encoding of they key sucks
+	_, err := self.Table.PutItem(fmt.Sprintf("%s|%d", series.String(), int64(store.Duration.Seconds())), fmt.Sprintf("%v", start.Unix()), attribs)
+	return err
+}
 
 type DynamoDBCache struct {
 	Table *dynamodb.Table

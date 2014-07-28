@@ -3,6 +3,7 @@ package timedb
 import (
 	"github.com/gocql/gocql"
 	"testing"
+	"time"
 )
 
 func TestCQLCache(t *testing.T) {
@@ -25,5 +26,5 @@ func TestCQLCache(t *testing.T) {
 		Filter: &filter,
 		Store:  &cache,
 	}
-	testLevel(&level, t)
+	testLevel(&level, t, time.Second, 60*time.Second)
 }

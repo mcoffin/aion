@@ -14,13 +14,14 @@ type bucketStoreContext struct {
 
 // Destroys the back buffer, replaces it with the front buffer,
 // then creates a new front buffer
-func (self *bucketStoreContext) swapBuffers() {
+func (self *bucketStoreContext) swapBuffers(newBaseline int64) {
 	self.lastBuffer = self.buffer
 	self.buffer = &bytes.Buffer{}
+	self.encoder = bucket.NewBucketEncoder(newBaseline, self.buffer)
 }
 
 type BucketRepository interface {
-	Put(contexts map[string]*bucketStoreContext, store *BucketStore) error
+	Put(series uuid.UUID, start time.Time, contexts map[string]*bucketStoreContext, store *BucketStore) error
 }
 
 type BucketStore struct {
@@ -29,6 +30,11 @@ type BucketStore struct {
 	Repository BucketRepository
 	contexts   map[string]map[string]*bucketStoreContext
 	endTimes   map[string]*time.Time
+}
+
+func (self *BucketStore) Init() {
+	self.contexts = map[string]map[string]*bucketStoreContext{}
+	self.endTimes = map[string]*time.Time{}
 }
 
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
@@ -40,14 +46,14 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 		self.contexts[seriesStr] = contexts
 	}
 	if self.endTimes[seriesStr] == nil {
-		tmp := entry.Timestamp.Truncate(self.Duration)
+		tmp := entry.Timestamp.Truncate(self.Duration).Add(self.Duration)
 		self.endTimes[seriesStr] = &tmp
 	} else if entry.Timestamp.After(*self.endTimes[seriesStr]) {
-		for _, ctx := range contexts {
-			ctx.swapBuffers()
+		for k, ctx := range contexts {
 			ctx.encoder.Close()
+			ctx.swapBuffers(marshalFloat64(entry.Attributes[k], self.Multiplier))
 		}
-		err = self.Repository.Put(contexts, self)
+		err = self.Repository.Put(series, self.endTimes[seriesStr].Add(-self.Duration), contexts, self)
 		self.endTimes[seriesStr] = nil
 	}
 	// Write all attributes to their encoders

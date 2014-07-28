@@ -2,6 +2,7 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"fmt"
 	"github.com/FlukeNetworks/timedb/aggregate"
 	"time"
 )
@@ -40,6 +41,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 		aggs := map[string]aggregate.Aggregator{}
 		for _, name := range self.Aggregations {
 			a, err := aggregate.NewAggregator(name)
+			fmt.Printf("Created aggregator %s = %v\n", name, a)
 			if err != nil {
 				return err
 			}
