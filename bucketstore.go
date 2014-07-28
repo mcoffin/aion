@@ -7,82 +7,96 @@ import (
 	"time"
 )
 
-type bucketStoreContext struct {
-	buffer, lastBuffer *bytes.Buffer
-	encoder            *bucket.BucketEncoder
+type BucketStoreContext struct {
+	Buffer  bytes.Buffer
+	encoder *bucket.BucketEncoder
 }
 
-// Destroys the back buffer, replaces it with the front buffer,
-// then creates a new front buffer
-func (self *bucketStoreContext) swapBuffers(newBaseline int64) {
-	self.lastBuffer = self.buffer
-	self.buffer = &bytes.Buffer{}
-	self.encoder = bucket.NewBucketEncoder(newBaseline, self.buffer)
+func NewBucketStoreContext(baseline int64) *BucketStoreContext {
+	ctx := BucketStoreContext{}
+	ctx.encoder = bucket.NewBucketEncoder(baseline, &ctx.Buffer)
+	return &ctx
+}
+
+type SeriesBucketStoreContext struct {
+	Contexts map[string]*BucketStoreContext
+	Baseline int64
+	End      time.Time
+}
+
+func NewSeriesBucketStoreContext(entry Entry, store *BucketStore) *SeriesBucketStoreContext {
+	var baseline int64
+	for _, v := range entry.Attributes {
+		baseline = marshalFloat64(v, store.Multiplier)
+		break
+	}
+	ctx := SeriesBucketStoreContext{
+		Contexts: map[string]*BucketStoreContext{},
+		Baseline: baseline,
+		End:      store.BucketTime(entry.Timestamp).Add(store.Duration),
+	}
+	for k, _ := range entry.Attributes {
+		ctx.Contexts[k] = NewBucketStoreContext(ctx.Baseline)
+	}
+	ctx.Contexts["times"] = NewBucketStoreContext(store.BucketTime(entry.Timestamp).Unix())
+	return &ctx
+}
+
+func (self SeriesBucketStoreContext) Start(store *BucketStore) time.Time {
+	return self.End.Add(-store.Duration)
+}
+
+func (self *SeriesBucketStoreContext) WriteEntry(entry Entry, store *BucketStore) {
+	for k, v := range entry.Attributes {
+		self.Contexts[k].encoder.WriteInt(marshalFloat64(v, store.Multiplier))
+	}
+	self.Contexts["times"].encoder.WriteInt(entry.Timestamp.Unix())
+}
+
+func (self *SeriesBucketStoreContext) Close() {
+	for _, ctx := range self.Contexts {
+		ctx.encoder.Close()
+	}
 }
 
 type BucketRepository interface {
-	Put(series uuid.UUID, start time.Time, contexts map[string]*bucketStoreContext, store *BucketStore) error
+	Put(series uuid.UUID, context *SeriesBucketStoreContext, store *BucketStore) error
 }
 
 type BucketStore struct {
 	Duration   time.Duration
 	Multiplier float64
 	Repository BucketRepository
-	contexts   map[string]map[string]*bucketStoreContext
-	endTimes   map[string]*time.Time
+	contexts   map[string]*SeriesBucketStoreContext
+}
+
+func (self BucketStore) BucketTime(t time.Time) time.Time {
+	return t.Truncate(self.Duration)
 }
 
 func (self *BucketStore) Init() {
-	self.contexts = map[string]map[string]*bucketStoreContext{}
-	self.endTimes = map[string]*time.Time{}
+	self.contexts = map[string]*SeriesBucketStoreContext{}
 }
 
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
-	var err error
 	seriesStr := series.String()
-	contexts := self.contexts[seriesStr]
-	if contexts == nil {
-		contexts = map[string]*bucketStoreContext{}
-		self.contexts[seriesStr] = contexts
-	}
-	if self.endTimes[seriesStr] == nil {
-		tmp := entry.Timestamp.Truncate(self.Duration).Add(self.Duration)
-		self.endTimes[seriesStr] = &tmp
-	} else if entry.Timestamp.After(*self.endTimes[seriesStr]) {
-		for k, ctx := range contexts {
-			ctx.encoder.Close()
-			if k == "times" {
-				ctx.swapBuffers(entry.Timestamp.Truncate(self.Duration).Unix())
-			} else {
-				ctx.swapBuffers(marshalFloat64(entry.Attributes[k], self.Multiplier))
-			}
+	seriesContext := self.contexts[seriesStr]
+	// Check for special bucket conditions
+	if seriesContext == nil {
+		seriesContext = NewSeriesBucketStoreContext(entry, self)
+		self.contexts[seriesStr] = seriesContext
+	} else if entry.Timestamp.After(seriesContext.End) {
+		seriesContext.Close()
+		err := self.Repository.Put(series, seriesContext, self)
+		if err != nil {
+			return err
 		}
-		err = self.Repository.Put(series, self.endTimes[seriesStr].Add(-self.Duration), contexts, self)
-		self.endTimes[seriesStr] = nil
+		self.contexts[seriesStr] = nil
+		return self.Insert(series, entry)
 	}
-	// Write time to the time encoder
-	tCtx := contexts["times"]
-	if tCtx == nil {
-		tCtx = &bucketStoreContext{
-			buffer: &bytes.Buffer{},
-		}
-		tCtx.encoder = bucket.NewBucketEncoder(entry.Timestamp.Truncate(self.Duration).Unix(), tCtx.buffer)
-		contexts["times"] = tCtx
-	}
-	tCtx.encoder.WriteInt(entry.Timestamp.Unix())
-	// Write all attributes to their encoders
-	for k, v := range entry.Attributes {
-		ctx := contexts[k]
-		if ctx == nil {
-			ctx = &bucketStoreContext{
-				buffer: &bytes.Buffer{},
-			}
-			ctx.encoder = bucket.NewBucketEncoder(marshalFloat64(entry.Attributes[k], self.Multiplier), ctx.buffer)
-			contexts[k] = ctx
-		}
-		contexts[k].encoder.WriteInt(marshalFloat64(v, self.Multiplier))
-	}
-	return err
+	// Write the entry
+	seriesContext.WriteEntry(entry, self)
+	return nil
 }
 
 func marshalFloat64(v float64, multiplier float64) int64 {

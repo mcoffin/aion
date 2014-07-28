@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/crowdmob/goamz/dynamodb"
-	"time"
 )
 
 type DynamoDBStore struct {
@@ -28,19 +27,19 @@ type DynamoDBRepository struct {
 	Table *dynamodb.Table
 }
 
-func (self *DynamoDBRepository) Put(series uuid.UUID, start time.Time, contexts map[string]*bucketStoreContext, store *BucketStore) error {
-	attribs := make([]dynamodb.Attribute, len(contexts))
+func (self *DynamoDBRepository) Put(series uuid.UUID, context *SeriesBucketStoreContext, store *BucketStore) error {
+	attribs := make([]dynamodb.Attribute, len(context.Contexts))
 	i := 0
-	for name, ctx := range contexts {
+	for name, ctx := range context.Contexts {
 		attribs[i] = dynamodb.Attribute{
 			Type:  "B",
 			Name:  name,
-			Value: base64.StdEncoding.EncodeToString(ctx.lastBuffer.Bytes()),
+			Value: base64.StdEncoding.EncodeToString(ctx.Buffer.Bytes()),
 		}
 		i++
 	}
 	// I really wish dynamodb had multiple-attribute keys because this manual encoding of they key sucks
-	_, err := self.Table.PutItem(fmt.Sprintf("%s|%d", series.String(), int64(store.Duration.Seconds())), fmt.Sprintf("%v", start.Unix()), attribs)
+	_, err := self.Table.PutItem(fmt.Sprintf("%s|%d", series.String(), int64(store.Duration.Seconds())), fmt.Sprintf("%v", context.Start(store).Unix()), attribs)
 	return err
 }
 
