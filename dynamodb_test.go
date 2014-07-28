@@ -15,8 +15,7 @@ func createDynamoDBTestServer() (*dynamodb.Server, error) {
 	}
 	server := dynamodb.Server{
 		Auth:   auth,
-		Region: aws.USWest,
-		//		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
+		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
 	}
 	return &server, nil
 }

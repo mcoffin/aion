@@ -6,7 +6,7 @@ create_table () {
 		--attribute-definitions AttributeName=series,AttributeType=S AttributeName=time,AttributeType=N \
 		--key-schema AttributeName=series,KeyType=HASH AttributeName=time,KeyType=RANGE \
 		--provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=10 \
-#		--endpoint-url http://localhost:8000
+		--endpoint-url http://localhost:8000
 	return 0
 }
 

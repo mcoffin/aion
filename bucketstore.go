@@ -51,11 +51,25 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	} else if entry.Timestamp.After(*self.endTimes[seriesStr]) {
 		for k, ctx := range contexts {
 			ctx.encoder.Close()
-			ctx.swapBuffers(marshalFloat64(entry.Attributes[k], self.Multiplier))
+			if k == "times" {
+				ctx.swapBuffers(entry.Timestamp.Truncate(self.Duration).Unix())
+			} else {
+				ctx.swapBuffers(marshalFloat64(entry.Attributes[k], self.Multiplier))
+			}
 		}
 		err = self.Repository.Put(series, self.endTimes[seriesStr].Add(-self.Duration), contexts, self)
 		self.endTimes[seriesStr] = nil
 	}
+	// Write time to the time encoder
+	tCtx := contexts["times"]
+	if tCtx == nil {
+		tCtx = &bucketStoreContext{
+			buffer: &bytes.Buffer{},
+		}
+		tCtx.encoder = bucket.NewBucketEncoder(entry.Timestamp.Truncate(self.Duration).Unix(), tCtx.buffer)
+		contexts["times"] = tCtx
+	}
+	tCtx.encoder.WriteInt(entry.Timestamp.Unix())
 	// Write all attributes to their encoders
 	for k, v := range entry.Attributes {
 		ctx := contexts[k]
