@@ -28,8 +28,13 @@ type DynamoDBRepository struct {
 }
 
 func (self *DynamoDBRepository) Put(series uuid.UUID, context *SeriesBucketStoreContext, store *BucketStore) error {
-	attribs := make([]dynamodb.Attribute, len(context.Contexts))
-	i := 0
+	attribs := make([]dynamodb.Attribute, len(context.Contexts)+1)
+	attribs[0] = dynamodb.Attribute{
+		Type:  "N",
+		Name:  "baseline",
+		Value: fmt.Sprintf("%d", context.Baseline),
+	}
+	i := 1
 	for name, ctx := range context.Contexts {
 		attribs[i] = dynamodb.Attribute{
 			Type:  "B",
