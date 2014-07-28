@@ -20,6 +20,7 @@ type Filter interface {
 // Interface for storing time series data
 type SeriesStore interface {
 	Insert(series uuid.UUID, entry Entry) error
+	Query(series uuid.UUID, start time.Time, end time.Time, attributes []string, entries chan Entry, errors chan error)
 }
 
 // A level represents one granularity of data storage in timedb

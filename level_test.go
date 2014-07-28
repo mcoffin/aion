@@ -9,7 +9,8 @@ import (
 func testLevel(level *Level, t *testing.T, granularity time.Duration, duration time.Duration) {
 	series := uuid.NewRandom()
 	level.Filter.SetHandler(level.Store.Insert)
-	current := time.Now()
+	start := time.Now()
+	current := start
 	end := current.Add(duration)
 	for !current.After(end) {
 		for _, v := range testData {
@@ -22,6 +23,24 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 				t.Error(err)
 			}
 			current = current.Add(granularity)
+		}
+	}
+	entryC := make(chan Entry, 4)
+	errorC := make(chan error)
+	go level.Store.Query(series, start, end, []string{"raw"}, entryC, errorC)
+	for i := 0; true; i++ {
+		select {
+		case err := <-errorC:
+			t.Error(err)
+			return
+		case e, more := <-entryC:
+			if !more {
+				return
+			}
+			testDataIndex := i % len(testData)
+			if e.Attributes["raw"] != testData[testDataIndex] {
+				t.Errorf("Value %v at index %d doesn't match %v\n", e.Attributes["raw"], i, testData[testDataIndex])
+			}
 		}
 	}
 }

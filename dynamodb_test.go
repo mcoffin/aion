@@ -88,7 +88,7 @@ func TestDynamoDBStore(t *testing.T) {
 	filter.Init()
 	level := Level{
 		Filter: &filter,
-		Store:  store,
+		//Store:  store,
 	}
 	testLevel(&level, t, time.Second, 3*bktStore.Duration)
 }
