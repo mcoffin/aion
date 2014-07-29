@@ -11,6 +11,7 @@ type BucketRepository interface {
 
 type BucketBuilder interface {
 	SeriesStore
+	WriteBuckets(repo BucketRepository)
 }
 
 type BucketStore struct {
