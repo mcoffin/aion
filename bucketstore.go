@@ -53,45 +53,6 @@ func (self *SeriesBucketStoreContext) WriteEntry(entry Entry, store *BucketStore
 	self.Contexts["times"].encoder.WriteInt(entry.Timestamp.Unix())
 }
 
-func (self *SeriesBucketStoreContext) Query(start time.Time, end time.Time, attributes []string, store *BucketStore, entries chan Entry) error {
-	timeContext := self.Contexts["times"]
-	decs := map[string]*bucket.BucketDecoder{}
-	decs["times"] = bucket.NewBucketDecoder(self.Start(store).Unix(), &timeContext.Buffer)
-	for _, name := range attributes {
-		ctx := self.Contexts[name]
-		decs[name] = bucket.NewBucketDecoder(self.Baseline, &ctx.Buffer)
-	}
-	buf := make([]int64, 8)
-	entryBuf := make([]Entry, len(buf))
-	for {
-		entriesRead := 0
-		for name, dec := range decs {
-			n, err := dec.Read(buf)
-			entriesRead = n
-			if err != nil {
-				return err
-			}
-			// If statement outside of the loop for optimization purposes
-			if name == "times" {
-				for i, value := range buf[:n] {
-					entryBuf[i].Timestamp = time.Unix(value, 0)
-				}
-			} else {
-				for i, value := range buf[:n] {
-					entryBuf[i].Attributes[name] = float64(value) * (1.0 / store.Multiplier)
-				}
-			}
-		}
-		for _, e := range entryBuf[:entriesRead] {
-			entries <- e
-		}
-		if entriesRead < len(entryBuf) {
-			break
-		}
-	}
-	return nil
-}
-
 func (self *SeriesBucketStoreContext) Close() {
 	for _, ctx := range self.Contexts {
 		ctx.encoder.Close()
@@ -115,16 +76,6 @@ func (self BucketStore) BucketTime(t time.Time) time.Time {
 
 func (self *BucketStore) Init() {
 	self.contexts = map[string]*SeriesBucketStoreContext{}
-}
-
-func (self *BucketStore) Query(series uuid.UUID, start time.Time, end time.Time, attributes []string, entries chan Entry, errors chan error) {
-	seriesStr := series.String()
-	// TODO query shit off of disk
-	err := self.contexts[seriesStr].Query(start, end, attributes, self, entries)
-	if err != nil {
-		errors <- err
-		return
-	}
 }
 
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
