@@ -39,6 +39,7 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 		if n > 0 {
 			for i, e := range buf[:n] {
 				index := (count % len(testData)) + i
+				index = index % len(testData)
 				if e.Attributes["raw"] != testData[index] {
 					t.Errorf("Attribute %v at index %d does not match %v\n", e.Attributes["raw"], count, testData[index])
 				}
