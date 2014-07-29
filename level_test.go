@@ -2,6 +2,7 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -25,22 +26,20 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 			current = current.Add(granularity)
 		}
 	}
-	entryC := make(chan Entry, 4)
-	errorC := make(chan error)
-	go level.Store.Query(series, start, end, []string{"raw"}, entryC, errorC)
-	for i := 0; true; i++ {
-		select {
-		case err := <-errorC:
-			t.Error(err)
-			return
-		case e, more := <-entryC:
-			if !more {
-				return
+	buf := make([]Entry, 8)
+	reader, err := level.Store.Query(series, start, end, []string{"raw"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		n, err := reader.ReadEntries(buf)
+		if n > 0 {
+			for _, e := range buf[:n] {
+				fmt.Println("query: %+v\n", e)
 			}
-			testDataIndex := i % len(testData)
-			if e.Attributes["raw"] != testData[testDataIndex] {
-				t.Errorf("Value %v at index %d doesn't match %v\n", e.Attributes["raw"], i, testData[testDataIndex])
-			}
+		}
+		if err != nil {
+			break
 		}
 	}
 }
