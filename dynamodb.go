@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	"fmt"
 	"github.com/crowdmob/goamz/dynamodb"
+	"io"
 	"strconv"
 	"time"
 )
@@ -59,7 +60,7 @@ func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attribu
 				Attributes: map[string]float64{},
 			}
 			for name, attrib := range item {
-				if name == "time" {
+				if name == "time" || name == "series" {
 					continue
 				}
 				floatValue, err := strconv.ParseFloat(attrib.Value, 64)
@@ -70,6 +71,10 @@ func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attribu
 			}
 			entries[i] = e
 			itemCount = i + 1
+		}
+		index += itemCount
+		if itemCount == 0 {
+			return itemCount, io.EOF
 		}
 		return itemCount, nil
 	}
