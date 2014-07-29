@@ -1,5 +1,10 @@
 package timedb
 
+import (
+	"code.google.com/p/go-uuid/uuid"
+	"time"
+)
+
 type InMemoryBucketBuilder struct {
 }
 

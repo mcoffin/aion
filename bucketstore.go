@@ -11,7 +11,7 @@ type BucketRepository interface {
 
 type BucketBuilder interface {
 	SeriesStore
-	WriteBuckets(repo BucketRepository)
+	WriteBuckets(repo BucketRepository) error
 }
 
 type BucketStore struct {
@@ -28,7 +28,7 @@ func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attribute
 		return nil, err
 	}
 	// Create reader for the repository
-	repoReader, err := self.Builder.Query(series, start, end, attributes)
+	repoReader, err := self.Repository.Query(series, start, end, attributes)
 	if err != nil {
 		return nil, err
 	}
