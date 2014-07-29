@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-var testData = []float64{79.1, 80.0, 78.2, 43.1, 90.7, 90.7}
+var testData = []float64{79.1, 80.0, 78.2, 43.1, 90.7, 90.7, 77.7}
 
 const (
 	testSpan = 1 * time.Second

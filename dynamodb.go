@@ -37,7 +37,7 @@ func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attribu
 	conditions := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", series.String()),
 		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_GREATER_THAN_OR_EQUAL, start.Unix()),
-		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_LESS_THAN, end.Unix()),
+		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_LESS_THAN_OR_EQUAL, end.Unix()),
 	}
 	items, err := self.Table.Query(conditions)
 	if err != nil {

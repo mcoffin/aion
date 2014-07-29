@@ -28,6 +28,21 @@ func (self *AggregationFilter) Init() {
 	self.aContexts = map[string]*aggregationContext{}
 }
 
+func (self *AggregationFilter) Flush(series uuid.UUID) error {
+	seriesStr := series.String()
+	aggregators := self.aggregators[seriesStr]
+	e := Entry{
+		Timestamp:  self.aContexts[seriesStr].start,
+		Attributes: map[string]float64{},
+	}
+	for name, a := range aggregators {
+		e.Attributes[name] = a.Value()
+		a.Reset()
+	}
+	self.aContexts[seriesStr] = nil
+	return self.handler(series, e)
+}
+
 func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	var err error
 	seriesStr := series.String()

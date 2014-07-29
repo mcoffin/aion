@@ -26,9 +26,13 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 				t.Error(err)
 			}
 			current = current.Add(granularity)
+			if current.After(end) {
+				break
+			}
 		}
 	}
-	buf := make([]Entry, 3)
+	level.Filter.Flush(series)
+	buf := make([]Entry, 9)
 	reader, err := level.Store.Query(series, start, end, []string{"raw"})
 	if err != nil {
 		t.Fatal(err)
@@ -37,15 +41,14 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 	for {
 		n, err := reader.ReadEntries(buf)
 		if n > 0 {
-			for i, e := range buf[:n] {
-				index := (count % len(testData)) + i
-				index = index % len(testData)
+			for _, e := range buf[:n] {
+				index := count % len(testData)
 				if e.Attributes["raw"] != testData[index] {
 					t.Errorf("Attribute %v at index %d does not match %v\n", e.Attributes["raw"], count, testData[index])
 				}
+				count++
 			}
 		}
-		count += n
 		if err != nil {
 			if err.Error() != io.EOF.Error() {
 				t.Fatal(err)
