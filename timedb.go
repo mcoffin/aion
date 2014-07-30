@@ -32,7 +32,7 @@ func (self queryFunc) ReadEntries(buf []Entry) (int, error) {
 
 // Interface for something that can provide time series data back
 type Querier interface {
-	Query(series uuid.UUID, start, end time.Time, attributes []string) (EntryReader, error)
+	Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error)
 }
 
 // Interface for storing time series data

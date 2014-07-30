@@ -4,7 +4,6 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	"fmt"
 	"github.com/crowdmob/goamz/dynamodb"
-	"io"
 	"strconv"
 	"time"
 )
@@ -33,7 +32,7 @@ type DynamoDBCache struct {
 	Table *dynamodb.Table
 }
 
-func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attributes []string) (EntryReader, error) {
+func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	conditions := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", series.String()),
 		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_GREATER_THAN_OR_EQUAL, start.Unix()),
@@ -41,44 +40,35 @@ func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attribu
 	}
 	items, err := self.Table.Query(conditions)
 	if err != nil {
-		return nil, err
+		errors <- err
+		return
 	}
-	index := 0
-	ret := func(entries []Entry) (int, error) {
-		end := index + len(entries)
-		if end > len(items) {
-			end = len(items)
+	for _, item := range items {
+		e := Entry{
+			Attributes: map[string]float64{},
 		}
-		itemCount := 0
-		for i, item := range items[index:end] {
-			unixTime, err := strconv.ParseInt(item["time"].Value, 10, 64)
-			if err != nil {
-				return i, err
+		for name, a := range item {
+			if name == "series" {
+				continue
 			}
-			e := Entry{
-				Timestamp:  time.Unix(unixTime, 0),
-				Attributes: map[string]float64{},
-			}
-			for name, attrib := range item {
-				if name == "time" || name == "series" {
+			if name == "time" {
+				unixTime, err := strconv.ParseInt(a.Value, 10, 64)
+				if err != nil {
+					errors <- err
 					continue
 				}
-				floatValue, err := strconv.ParseFloat(attrib.Value, 64)
+				e.Timestamp = time.Unix(unixTime, 0)
+			} else {
+				value, err := strconv.ParseFloat(a.Value, 64)
 				if err != nil {
-					return i, err
+					errors <- err
+					continue
 				}
-				e.Attributes[name] = floatValue
+				e.Attributes[name] = value
 			}
-			entries[i] = e
-			itemCount = i + 1
 		}
-		index += itemCount
-		if itemCount == 0 {
-			return itemCount, io.EOF
-		}
-		return itemCount, nil
+		entries <- e
 	}
-	return queryFunc(ret), nil
 }
 
 func (self *DynamoDBCache) Insert(series uuid.UUID, entry Entry) error {

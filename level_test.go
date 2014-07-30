@@ -2,7 +2,6 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
-	"io"
 	"testing"
 	"time"
 )
@@ -32,32 +31,31 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 		}
 	}
 	level.Filter.Flush(series)
-	buf := make([]Entry, 9)
-	reader, err := level.Store.Query(series, start, end, []string{"raw"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	count := 0
-	for {
-		n, err := reader.ReadEntries(buf)
-		if n > 0 {
-			for _, e := range buf[:n] {
-				index := count % len(testData)
-				if e.Attributes["raw"] != testData[index] {
-					t.Errorf("Attribute %v at index %d does not match %v\n", e.Attributes["raw"], count, testData[index])
-				}
-				count++
+	entryC := make(chan Entry)
+	errorC := make(chan error)
+	go func() {
+		defer close(entryC)
+		level.Store.Query(series, start, end, []string{"raw"}, entryC, errorC)
+	}()
+	queryCount := 0
+loop:
+	for i := 0; true; i++ {
+		select {
+		case err := <-errorC:
+			t.Error(err)
+			i--
+		case e, more := <-entryC:
+			if !more {
+				break loop
 			}
-		}
-		if err != nil {
-			if err.Error() != io.EOF.Error() {
-				t.Fatal(err)
-			} else {
-				break
+			testDataIndex := i % len(testData)
+			if e.Attributes["raw"] != testData[testDataIndex] {
+				t.Errorf("Value %v at index %d doesn't match %v\n", e.Attributes["raw"], i, testData[testDataIndex])
 			}
+			queryCount++
 		}
 	}
-	if insertCount != count {
-		t.Errorf("Insert count %d doesn't match query count %d\n", insertCount, count)
+	if queryCount != insertCount {
+		t.Errorf("Inserted item count %d doesn't match queried item count %d\n", insertCount, queryCount)
 	}
 }
