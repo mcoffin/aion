@@ -5,18 +5,19 @@ import (
 	"time"
 )
 
+const (
+	TimeAttribute = "times"
+)
+
 type BucketRepository interface {
 	Querier
 }
 
 type BucketBuilder interface {
 	SeriesStore
-	WriteBuckets(repo BucketRepository) error
 }
 
 type BucketStore struct {
-	Duration   time.Duration
-	Multiplier float64
 	Repository BucketRepository
 	Builder    BucketBuilder
 }
@@ -34,5 +35,5 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	if err != nil {
 		return err
 	}
-	return self.Builder.WriteBuckets(self.Repository)
+	return nil
 }
