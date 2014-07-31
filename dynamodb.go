@@ -49,11 +49,6 @@ func (self DynamoDBRepository) Get(series uuid.UUID, start time.Time) ([]Encoded
 	return nil, nil
 }
 
-func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string) ([]EncodedBucket, error) {
-	// TODO
-	return nil, nil
-}
-
 type DynamoDBCache struct {
 	Table *dynamodb.Table
 }

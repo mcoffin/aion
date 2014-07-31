@@ -22,15 +22,6 @@ type EncodedBucket struct {
 type BucketRepository interface {
 	Put(series uuid.UUID, granularity time.Duration, start time.Time, attributes []EncodedBucketAttribute) error
 	Get(series uuid.UUID, start time.Time) ([]EncodedBucketAttribute, error)
-	Query(series uuid.UUID, start, end time.Time, attributes []string) ([]EncodedBucket, error)
-}
-
-type bucketRepositoryQuerier struct {
-	repo BucketRepository
-}
-
-func (self bucketRepositoryQuerier) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
-	// TODO
 }
 
 type BucketBuilder interface {
@@ -47,7 +38,7 @@ type BucketStore struct {
 
 func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	// Query from memory and then from the repo
-	queriers := []Querier{self.Builder, bucketRepositoryQuerier{self.Repository}}
+	queriers := []Querier{self.Builder}
 	for _, q := range queriers {
 		q.Query(series, start, end, attributes, entries, errors)
 	}
