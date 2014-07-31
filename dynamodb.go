@@ -2,6 +2,7 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"encoding/base64"
 	"fmt"
 	"github.com/crowdmob/goamz/dynamodb"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 
 type DynamoDBStore struct {
 	BucketStore
-	DynamoDBRepository
+	repo DynamoDBRepository
 }
 
 func NewDynamoDBStore(store BucketStore, table *dynamodb.Table) *DynamoDBStore {
@@ -20,12 +21,37 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table) *DynamoDBStore {
 			Table: table,
 		},
 	}
-	ret.Repository = ret
+	ret.Repository = ret.repo
 	return ret
 }
 
 type DynamoDBRepository struct {
 	Table *dynamodb.Table
+}
+
+func (self DynamoDBRepository) Put(series uuid.UUID, granularity time.Duration, start time.Time, attributes []EncodedBucketAttribute) error {
+	hashKey := fmt.Sprintf("%s|%d", series.String(), int64(granularity.Seconds()))
+	rangeKey := fmt.Sprintf("%d", start.Unix())
+	bAttribs := make([]dynamodb.Attribute, len(attributes))
+	for i, encodedAttribute := range attributes {
+		bAttribs[i] = dynamodb.Attribute{
+			Type:  dynamodb.TYPE_BINARY,
+			Name:  encodedAttribute.Name,
+			Value: base64.StdEncoding.EncodeToString(encodedAttribute.Data),
+		}
+	}
+	_, err := self.Table.PutItem(hashKey, rangeKey, bAttribs)
+	return err
+}
+
+func (self DynamoDBRepository) Get(series uuid.UUID, start time.Time) ([]EncodedBucketAttribute, error) {
+	// TODO
+	return nil, nil
+}
+
+func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string) ([]EncodedBucket, error) {
+	// TODO
+	return nil, nil
 }
 
 type DynamoDBCache struct {

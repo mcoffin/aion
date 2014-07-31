@@ -172,8 +172,8 @@ func (self *MemoryBucketBuilder) Get(series uuid.UUID, start time.Time) ([]Encod
 	i := 0
 	for name, ctx := range bkt.contexts {
 		ret[i] = EncodedBucketAttribute{
-			Name:   name,
-			Reader: bytes.NewBuffer(ctx.buffer.Bytes()),
+			Name: name,
+			Data: ctx.buffer.Bytes(),
 		}
 		i++
 	}
