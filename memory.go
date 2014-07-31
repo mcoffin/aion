@@ -49,13 +49,13 @@ func (self MemoryBucketBuilder) bucketStartTime(t time.Time) time.Time {
 	return t.Truncate(self.Duration)
 }
 
-func (self *MemoryBucketBuilder) bucket(series uuid.UUID, entry Entry) (*memoryBucket, time.Time) {
+func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryBucket, time.Time) {
 	seriesMap := self.contexts[series.String()]
 	if seriesMap == nil {
 		seriesMap = map[time.Time]*memoryBucket{}
 		self.contexts[series.String()] = seriesMap
 	}
-	startTime := self.bucketStartTime(entry.Timestamp)
+	startTime := self.bucketStartTime(t)
 	bkt := seriesMap[startTime]
 	if bkt == nil {
 		bkt = &memoryBucket{
@@ -123,7 +123,7 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 }
 
 func (self *MemoryBucketBuilder) Insert(series uuid.UUID, entry Entry) error {
-	bkt, _ := self.bucket(series, entry)
+	bkt, _ := self.bucket(series, entry.Timestamp)
 	timeEncoder := bkt.context(TimeAttribute).encoder
 	if timeEncoder == nil {
 		timeEncoder = bucket.NewBucketEncoder(entry.Timestamp.Unix(), &bkt.context(TimeAttribute).buffer)
@@ -139,4 +139,43 @@ func (self *MemoryBucketBuilder) Insert(series uuid.UUID, entry Entry) error {
 		enc.WriteInt(int64(value * self.Multiplier))
 	}
 	return nil
+}
+
+func (self *MemoryBucketBuilder) BucketsToWrie(series uuid.UUID) []time.Time {
+	seriesMap := self.contexts[series.String()]
+	if seriesMap == nil || len(seriesMap) < 2 {
+		return nil
+	}
+	var largest *time.Time
+	for t, _ := range seriesMap {
+		if largest == nil || t.After(*largest) {
+			largest = &t
+		}
+	}
+	ret := make([]time.Time, len(seriesMap)-1)
+	i := 0
+	for t, _ := range seriesMap {
+		if t.Before(*largest) {
+			ret[i] = t
+			i++
+		}
+	}
+	return ret
+}
+
+func (self *MemoryBucketBuilder) Get(series uuid.UUID, start time.Time) ([]EncodedBucketAttribute, error) {
+	bkt := self.contexts[series.String()][start]
+	if bkt == nil {
+		return nil, nil
+	}
+	ret := make([]EncodedBucketAttribute, len(bkt.contexts))
+	i := 0
+	for name, ctx := range bkt.contexts {
+		ret[i] = EncodedBucketAttribute{
+			Name:   name,
+			Reader: bytes.NewBuffer(ctx.buffer.Bytes()),
+		}
+		i++
+	}
+	return ret, nil
 }
