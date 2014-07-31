@@ -18,18 +18,6 @@ type Filter interface {
 	Flush(series uuid.UUID) error
 }
 
-// Interface for reading Entries in to a buffer
-type EntryReader interface {
-	ReadEntries(buf []Entry) (int, error)
-}
-
-type queryFunc (func([]Entry) (int, error))
-
-// queryFunc implements the EntryReader interface
-func (self queryFunc) ReadEntries(buf []Entry) (int, error) {
-	return self(buf)
-}
-
 // Interface for something that can provide time series data back
 type Querier interface {
 	Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error)
