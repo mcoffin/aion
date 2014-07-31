@@ -3,7 +3,6 @@ package timedb
 import (
 	"bytes"
 	"code.google.com/p/go-uuid/uuid"
-	"fmt"
 	"github.com/FlukeNetworks/timedb/bucket"
 	"time"
 )
@@ -120,7 +119,6 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 				break
 			}
 		}
-		fmt.Println("Passed readloop")
 	}
 }
 
