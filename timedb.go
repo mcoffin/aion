@@ -17,8 +17,8 @@ func (self entryReaderFunc) ReadEntries(entries []Entry) (int, error) {
 
 // One entry in a time series
 type Entry struct {
-	Timestamp  time.Time
-	Attributes map[string]float64
+	Timestamp  time.Time          `json:"timestamp"`
+	Attributes map[string]float64 `json:"Attributes"`
 }
 
 // Interface of filtering data in to a level
@@ -48,6 +48,14 @@ type Level struct {
 // Root of the TimeDB API
 type TimeDB struct {
 	Levels []Level
+}
+
+func New(levels []Level) *TimeDB {
+	ret := &TimeDB{
+		Levels: levels,
+	}
+	ret.createHandlers()
+	return ret
 }
 
 func (self *TimeDB) createHandlers() {
