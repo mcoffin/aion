@@ -72,6 +72,7 @@ func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bu
 	ret := func(entries []Entry) (int, error) {
 		iBuf := make([]int64, len(entries))
 		n, err := decs[TimeAttribute].Read(iBuf)
+		iBuf = iBuf[:n]
 		if n > 0 {
 			for i, v := range iBuf {
 				entries[i].Timestamp = time.Unix(v, 0)
@@ -79,6 +80,7 @@ func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bu
 			mult := 1 / multiplier
 			for _, a := range attributes {
 				decs[a].Read(iBuf)
+				fmt.Printf("%s: %v\n", len(attributes), a, iBuf)
 				for i, v := range iBuf {
 					entries[i].Attributes[a] = float64(v) * mult
 				}

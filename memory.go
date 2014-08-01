@@ -56,7 +56,7 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 	return bkt, startTime
 }
 
-func (self *MemoryBucketBuilder) entryReader(start time.Time, bkt *memoryBucket, attributes []string) EntryReader {
+func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, bkt *memoryBucket, attributes []string) EntryReader {
 	bkt.context(TimeAttribute).encoder.Close()
 	decs := map[string]*bucket.BucketDecoder{
 		TimeAttribute: bucket.NewBucketDecoder(start.Unix(), &bkt.context(TimeAttribute).buffer),
@@ -65,24 +65,7 @@ func (self *MemoryBucketBuilder) entryReader(start time.Time, bkt *memoryBucket,
 		bkt.context(a).encoder.Close()
 		decs[a] = bucket.NewBucketDecoder(0, &bkt.context(a).buffer)
 	}
-	ret := func(entries []Entry) (int, error) {
-		iBuf := make([]int64, len(entries))
-		n, err := decs[TimeAttribute].Read(iBuf)
-		if n > 0 {
-			for i, v := range iBuf {
-				entries[i].Timestamp = time.Unix(v, 0)
-			}
-			mult := 1 / self.Multiplier
-			for _, a := range attributes {
-				decs[a].Read(iBuf)
-				for i, v := range iBuf {
-					entries[i].Attributes[a] = float64(v) * mult
-				}
-			}
-		}
-		return n, err
-	}
-	return entryReaderFunc(ret)
+	return bucketEntryReader(series, self.Multiplier, decs, attributes)
 }
 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
@@ -93,8 +76,8 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 		if bucket == nil {
 			continue
 		}
-		reader := self.entryReader(t, bucket, attributes)
-		entryBuf := make([]Entry, 8)
+		reader := self.entryReader(series, t, bucket, attributes)
+		entryBuf := make([]Entry, 1)
 		for i, _ := range entryBuf {
 			entryBuf[i].Attributes = map[string]float64{}
 		}
