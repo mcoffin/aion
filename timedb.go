@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+type EntryReader interface {
+	ReadEntries(entries []Entry) (int, error)
+}
+
+type entryReaderFunc (func([]Entry) (int, error))
+
+func (self entryReaderFunc) ReadEntries(entries []Entry) (int, error) {
+	return self(entries)
+}
+
 // One entry in a time series
 type Entry struct {
 	Timestamp  time.Time

@@ -7,16 +7,6 @@ import (
 	"time"
 )
 
-type EntryReader interface {
-	ReadEntries(entries []Entry) (int, error)
-}
-
-type entryReaderFunc (func([]Entry) (int, error))
-
-func (self entryReaderFunc) ReadEntries(entries []Entry) (int, error) {
-	return self(entries)
-}
-
 type memoryBucketAttribute struct {
 	buffer  bytes.Buffer
 	encoder *bucket.BucketEncoder
@@ -97,7 +87,7 @@ func (self *MemoryBucketBuilder) entryReader(start time.Time, bkt *memoryBucket,
 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	seriesStr := series.String()
-	for t := self.bucketStartTime(start); !t.After(end); t = t.Add(self.Duration) {
+	for t := self.bucketStartTime(end); t.After(start); t = t.Add(-self.Duration) {
 		bucket := self.contexts[seriesStr][t]
 		// If we don't have this bucket, then the query is done
 		if bucket == nil {
@@ -141,7 +131,7 @@ func (self *MemoryBucketBuilder) Insert(series uuid.UUID, entry Entry) error {
 	return nil
 }
 
-func (self *MemoryBucketBuilder) BucketsToWrie(series uuid.UUID) []time.Time {
+func (self *MemoryBucketBuilder) BucketsToWrite(series uuid.UUID) []time.Time {
 	seriesMap := self.contexts[series.String()]
 	if seriesMap == nil || len(seriesMap) < 2 {
 		return nil
@@ -171,6 +161,7 @@ func (self *MemoryBucketBuilder) Get(series uuid.UUID, start time.Time) ([]Encod
 	ret := make([]EncodedBucketAttribute, len(bkt.contexts))
 	i := 0
 	for name, ctx := range bkt.contexts {
+		ctx.encoder.Close()
 		ret[i] = EncodedBucketAttribute{
 			Name: name,
 			Data: ctx.buffer.Bytes(),
@@ -178,4 +169,12 @@ func (self *MemoryBucketBuilder) Get(series uuid.UUID, start time.Time) ([]Encod
 		i++
 	}
 	return ret, nil
+}
+
+func (self *MemoryBucketBuilder) Delete(series uuid.UUID, t time.Time) {
+	seriesMap := self.contexts[series.String()]
+	if seriesMap == nil {
+		return
+	}
+	delete(seriesMap, t)
 }

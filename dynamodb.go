@@ -1,9 +1,11 @@
 package timedb
 
 import (
+	"bytes"
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/base64"
 	"fmt"
+	"github.com/FlukeNetworks/timedb/bucket"
 	"github.com/crowdmob/goamz/dynamodb"
 	"strconv"
 	"time"
@@ -14,11 +16,13 @@ type DynamoDBStore struct {
 	repo DynamoDBRepository
 }
 
-func NewDynamoDBStore(store BucketStore, table *dynamodb.Table) *DynamoDBStore {
+func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float64) *DynamoDBStore {
 	ret := &DynamoDBStore{
 		store,
 		DynamoDBRepository{
-			Table: table,
+			Multiplier:  multiplier,
+			Granularity: store.Granularity,
+			Table:       table,
 		},
 	}
 	ret.Repository = ret.repo
@@ -26,7 +30,9 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table) *DynamoDBStore {
 }
 
 type DynamoDBRepository struct {
-	Table *dynamodb.Table
+	Multiplier  float64
+	Granularity time.Duration
+	Table       *dynamodb.Table
 }
 
 func (self DynamoDBRepository) Put(series uuid.UUID, granularity time.Duration, start time.Time, attributes []EncodedBucketAttribute) error {
@@ -44,9 +50,61 @@ func (self DynamoDBRepository) Put(series uuid.UUID, granularity time.Duration, 
 	return err
 }
 
-func (self DynamoDBRepository) Get(series uuid.UUID, start time.Time) ([]EncodedBucketAttribute, error) {
-	// TODO
-	return nil, nil
+func (self DynamoDBRepository) entryReader(series uuid.UUID, item map[string]*dynamodb.Attribute, attributes []string) (EntryReader, error) {
+	tData, err := base64.StdEncoding.DecodeString(item[TimeAttribute].Value)
+	if err != nil {
+		return nil, err
+	}
+	startUnix, err := strconv.ParseInt(item["time"].Value, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	decs := map[string]*bucket.BucketDecoder{
+		TimeAttribute: bucket.NewBucketDecoder(startUnix, bytes.NewBuffer(tData)),
+	}
+	for _, a := range attributes {
+		data, err := base64.StdEncoding.DecodeString(item[a].Value)
+		if err != nil {
+			return nil, err
+		}
+		decs[a] = bucket.NewBucketDecoder(0, bytes.NewBuffer(data))
+	}
+	return bucketEntryReader(series, self.Multiplier, decs, attributes), nil
+}
+
+func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	comparisons := []dynamodb.AttributeComparison{
+		*dynamodb.NewEqualStringAttributeComparison("series", fmt.Sprintf("%s|%d", series.String(), int64(self.Granularity.Seconds()))),
+		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_GREATER_THAN_OR_EQUAL, start.Unix()),
+		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_LESS_THAN, end.Unix()),
+	}
+	items, err := self.Table.Query(comparisons)
+	if err != nil {
+		errors <- err
+		return
+	}
+	for _, item := range items {
+		reader, err := self.entryReader(series, item, attributes)
+		if err != nil {
+			errors <- err
+			return
+		}
+		entryBuf := make([]Entry, 8)
+		for i, _ := range entryBuf {
+			entryBuf[i].Attributes = map[string]float64{}
+		}
+		for {
+			n, err := reader.ReadEntries(entryBuf)
+			if n > 0 {
+				for _, e := range entryBuf[:n] {
+					entries <- e
+				}
+			}
+			if err != nil {
+				break
+			}
+		}
+	}
 }
 
 type DynamoDBCache struct {
