@@ -2,7 +2,6 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
-	"fmt"
 	"github.com/FlukeNetworks/timedb/bucket"
 	"time"
 )
@@ -37,8 +36,7 @@ type BucketStore struct {
 func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	// Query from memory and then from the repo
 	queriers := []Querier{self.Repository, self.Builder}
-	for i, q := range queriers {
-		fmt.Printf("Querying from querier at index %d\n", i)
+	for _, q := range queriers {
 		q.Query(series, start, end, attributes, entries, errors)
 	}
 }
@@ -80,7 +78,6 @@ func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bu
 			mult := 1 / multiplier
 			for _, a := range attributes {
 				decs[a].Read(iBuf)
-				fmt.Printf("%s: %v\n", len(attributes), a, iBuf)
 				for i, v := range iBuf {
 					entries[i].Attributes[a] = float64(v) * mult
 				}

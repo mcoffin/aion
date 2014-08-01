@@ -90,14 +90,18 @@ func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, att
 			return
 		}
 		entryBuf := make([]Entry, 1)
+		entryBackBuf := make([]Entry, len(entryBuf))
 		for i, _ := range entryBuf {
 			entryBuf[i].Attributes = map[string]float64{}
+			entryBackBuf[i].Attributes = map[string]float64{}
 		}
 		for {
 			n, err := reader.ReadEntries(entryBuf)
+			tmp := entryBuf
+			entryBuf = entryBackBuf
+			entryBackBuf = tmp
 			if n > 0 {
-				for _, e := range entryBuf[:n] {
-					fmt.Printf("%v\n", e)
+				for _, e := range entryBackBuf[:n] {
 					entries <- e
 				}
 			}

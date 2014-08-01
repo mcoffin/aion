@@ -78,13 +78,18 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 		}
 		reader := self.entryReader(series, t, bucket, attributes)
 		entryBuf := make([]Entry, 1)
+		entryBackBuf := make([]Entry, len(entryBuf))
 		for i, _ := range entryBuf {
 			entryBuf[i].Attributes = map[string]float64{}
+			entryBackBuf[i].Attributes = map[string]float64{}
 		}
 		for {
 			n, err := reader.ReadEntries(entryBuf)
+			tmp := entryBuf
+			entryBuf = entryBackBuf
+			entryBackBuf = tmp
 			if n > 0 {
-				for _, e := range entryBuf[:n] {
+				for _, e := range entryBackBuf[:n] {
 					entries <- e
 				}
 			}
