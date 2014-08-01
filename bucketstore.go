@@ -36,8 +36,9 @@ type BucketStore struct {
 
 func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	// Query from memory and then from the repo
-	queriers := []Querier{self.Builder, self.Repository}
-	for _, q := range queriers {
+	queriers := []Querier{self.Repository, self.Builder}
+	for i, q := range queriers {
+		fmt.Printf("Querying from querier at index %d\n", i)
 		q.Query(series, start, end, attributes, entries, errors)
 	}
 }
@@ -50,9 +51,12 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	writeTimes := self.Builder.BucketsToWrite(series)
 	for _, t := range writeTimes {
 		data, err := self.Builder.Get(series, t)
-		fmt.Println(data)
 		if err != nil {
 			return err
+		}
+		if len(data) <= 0 {
+			self.Builder.Delete(series, t)
+			continue
 		}
 		err = self.Repository.Put(series, self.Granularity, t, data)
 		if err != nil {

@@ -87,11 +87,11 @@ func (self *MemoryBucketBuilder) entryReader(start time.Time, bkt *memoryBucket,
 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	seriesStr := series.String()
-	for t := self.bucketStartTime(end); t.After(start); t = t.Add(-self.Duration) {
+	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
 		bucket := self.contexts[seriesStr][t]
-		// If we don't have this bucket, then the query is done
+		// If we don't have this bucket, then move on down the line
 		if bucket == nil {
-			break
+			continue
 		}
 		reader := self.entryReader(t, bucket, attributes)
 		entryBuf := make([]Entry, 8)

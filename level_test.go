@@ -2,6 +2,7 @@ package timedb
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -49,6 +50,7 @@ loop:
 				break loop
 			}
 			testDataIndex := i % len(testData)
+			fmt.Printf("Index %d\n", i)
 			if e.Attributes["raw"] != testData[testDataIndex] {
 				t.Errorf("Value %v at index %d doesn't match %v\n", e.Attributes["raw"], i, testData[testDataIndex])
 			}
