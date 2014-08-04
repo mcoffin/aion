@@ -14,6 +14,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -43,15 +44,63 @@ func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 		Timestamp:  time.Unix(input.Timestamp, 0),
 		Attributes: input.Attributes,
 	}
+	fmt.Printf("Inserting (%s, %+v)\n", seriesUUID.String(), e)
 	err = self.db.Put(seriesUUID, e)
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
 		return
 	}
+	res.WriteHeader(http.StatusOK)
 }
 
 func (self Context) QuerySeries(res http.ResponseWriter, req *http.Request) {
-	writeError(res, http.StatusNotImplemented, errors.New(http.StatusText(http.StatusNotImplemented)))
+	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
+	params := req.URL.Query()
+	fmt.Println(params)
+	if params["s"] == nil {
+		writeError(res, http.StatusBadRequest, errors.New("timedb: no start time given"))
+		return
+	}
+	start, err := parseUnixTime(params["s"][0])
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	if params["e"] == nil {
+		writeError(res, http.StatusBadRequest, errors.New("timedb: no end time given"))
+		return
+	}
+	end, err := parseUnixTime(params["e"][0])
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	var level int64 = 0
+	if params["l"] != nil {
+		level, err = strconv.ParseInt(params["l"][0], 10, 64)
+		if err != nil {
+			writeError(res, http.StatusBadRequest, err)
+			return
+		}
+	}
+	entryC := make(chan timedb.Entry)
+	errorC := make(chan error)
+	go func() {
+		defer close(entryC)
+		self.db.Levels[level].Store.Query(seriesUUID, start, end, params["a"], entryC, errorC)
+	}()
+loop:
+	for {
+		select {
+		case err = <-errorC:
+			writeError(res, http.StatusServiceUnavailable, err)
+		case e, more := <-entryC:
+			if !more {
+				break loop
+			}
+			res.Write(mustMarshal(e))
+		}
+	}
 }
 
 type Error struct {
@@ -78,6 +127,14 @@ func mustMarshal(v interface{}) []byte {
 func writeError(res http.ResponseWriter, status int, err error) {
 	res.WriteHeader(status)
 	res.Write(mustMarshal(Error{err}))
+}
+
+func parseUnixTime(s string) (time.Time, error) {
+	unix, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(unix, 0), nil
 }
 
 func main() {
