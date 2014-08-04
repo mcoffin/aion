@@ -63,7 +63,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 		self.aggregators[seriesStr] = aggs
 	}
 	aggregators := self.aggregators[seriesStr]
-	if entry.Timestamp.After(self.aContexts[seriesStr].end) || entry.Timestamp.Equal(self.aContexts[seriesStr].end) {
+	if entry.Timestamp.After(self.aContexts[seriesStr].end) {
 		e := Entry{
 			Timestamp:  self.aContexts[seriesStr].start,
 			Attributes: map[string]float64{},
@@ -80,6 +80,11 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	for name, value := range entry.Attributes {
 		aggregators[name].Add(value)
 	}
+
+	if self.Granularity == 0 {
+		self.Flush(series)
+	}
+
 	return err
 }
 
