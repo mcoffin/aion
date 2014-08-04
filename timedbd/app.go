@@ -1,8 +1,8 @@
 package main
 
 import (
+	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/FlukeNetworks/timedb"
@@ -24,14 +24,42 @@ type Context struct {
 	db *timedb.TimeDB
 }
 
+type inputPoint struct {
+	Timestamp  int64              `json:"timestamp"`
+	Attributes map[string]float64 `json:"attributes"`
+}
+
 func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
-	res.WriteHeader(http.StatusNotImplemented)
-	err := errors.New(http.StatusText(http.StatusNotImplemented))
-	res.Write(mustMarshal(Error{err.Error()}))
+	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
+	dec := json.NewDecoder(req.Body)
+	var input inputPoint
+	err := dec.Decode(&input)
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	e := timedb.Entry{
+		Timestamp:  time.Unix(input.Timestamp, 0),
+		Attributes: input.Attributes,
+	}
+	err = self.db.Put(seriesUUID, e)
+	if err != nil {
+		writeError(res, http.StatusServiceUnavailable, err)
+		return
+	}
 }
 
 type Error struct {
-	Error string `json:"error"`
+	error
+}
+
+func (self Error) MarshalJSON() ([]byte, error) {
+	e := struct {
+		Error string `json:"error"`
+	}{
+		self.Error(),
+	}
+	return json.Marshal(e)
 }
 
 func mustMarshal(v interface{}) []byte {
@@ -40,6 +68,11 @@ func mustMarshal(v interface{}) []byte {
 		panic(err)
 	}
 	return data
+}
+
+func writeError(res http.ResponseWriter, status int, err error) {
+	res.WriteHeader(status)
+	res.Write(mustMarshal(Error{err}))
 }
 
 func main() {
@@ -60,6 +93,7 @@ func main() {
 
 	// Setup basic recovery and logging middleware
 	n := negroni.Classic()
+	// Always return JSON, so add header with middleware to avoid code duplication
 	n.Use(negroni.HandlerFunc(func(res http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
 		res.Header().Set("Content-Type", "application/json")
 		next(res, req)
