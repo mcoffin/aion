@@ -3,6 +3,7 @@ package main
 import (
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/FlukeNetworks/timedb"
@@ -49,6 +50,10 @@ func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (self Context) QuerySeries(res http.ResponseWriter, req *http.Request) {
+	writeError(res, http.StatusNotImplemented, errors.New(http.StatusText(http.StatusNotImplemented)))
+}
+
 type Error struct {
 	error
 }
@@ -88,8 +93,10 @@ func main() {
 	ctx := Context{db}
 
 	// Setup routes
-	r := mux.NewRouter()
+	router := mux.NewRouter()
+	r := router.PathPrefix("/v1").Subrouter()
 	r.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", ctx.InsertPoint).Methods("POST")
+	r.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", ctx.QuerySeries).Methods("GET")
 
 	// Setup basic recovery and logging middleware
 	n := negroni.Classic()
@@ -98,8 +105,9 @@ func main() {
 		res.Header().Set("Content-Type", "application/json")
 		next(res, req)
 	}))
-	n.UseHandler(r)
-	n.Run(fmt.Sprintf(":%d", *port))
+	n.UseHandler(router)
+	http.Handle("/v1/", n)
+	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
 
 func tempCreateTimeDB() (*timedb.TimeDB, error) {
