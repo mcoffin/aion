@@ -44,7 +44,6 @@ func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 		Timestamp:  time.Unix(input.Timestamp, 0),
 		Attributes: input.Attributes,
 	}
-	fmt.Printf("Inserting (%s, %+v)\n", seriesUUID.String(), e)
 	err = self.db.Put(seriesUUID, e)
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
@@ -56,7 +55,6 @@ func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 func (self Context) QuerySeries(res http.ResponseWriter, req *http.Request) {
 	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
 	params := req.URL.Query()
-	fmt.Println(params)
 	if params["s"] == nil {
 		writeError(res, http.StatusBadRequest, errors.New("timedb: no start time given"))
 		return
