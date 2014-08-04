@@ -18,7 +18,7 @@ func (self entryReaderFunc) ReadEntries(entries []Entry) (int, error) {
 // One entry in a time series
 type Entry struct {
 	Timestamp  time.Time          `json:"timestamp"`
-	Attributes map[string]float64 `json:"Attributes"`
+	Attributes map[string]float64 `json:"attributes"`
 }
 
 // Interface of filtering data in to a level
@@ -74,6 +74,8 @@ func (self *TimeDB) createHandlers() {
 			return nil
 		})
 	}
+	lastLevel := self.Levels[len(self.Levels)-1]
+	lastLevel.Filter.SetHandler(lastLevel.Store.Insert)
 }
 
 // Convenience method for inserting one data point into the first level
