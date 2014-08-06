@@ -12,6 +12,11 @@ const (
 	testSpan = 1 * time.Second
 )
 
+func TestCacheFilter(t *testing.T) {
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
+	testFilter(filter, t)
+}
+
 func testFilter(f Filter, t *testing.T) {
 	seriesUUID := uuid.NewRandom()
 	checkIndex := 0

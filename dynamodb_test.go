@@ -50,13 +50,9 @@ func TestDynamoDBStore(t *testing.T) {
 		Builder:     builder,
 	}
 	store := NewDynamoDBStore(bs, &tbl, builder.Multiplier)
-	filter := AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
-		Filter: &filter,
+		Filter: filter,
 		Store:  store,
 	}
 	testLevel(&level, t, time.Second, builder.Duration)
@@ -85,13 +81,9 @@ func TestDynamoDBCache(t *testing.T) {
 	cache := DynamoDBCache{
 		Table: &tbl,
 	}
-	filter := AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
-		Filter: &filter,
+		Filter: filter,
 		Store:  &cache,
 	}
 	testLevel(&level, t, time.Second, 60*time.Second)

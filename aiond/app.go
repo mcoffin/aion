@@ -116,11 +116,7 @@ func tempCreateAion() (*aion.Aion, error) {
 	cache := aion.DynamoDBCache{
 		Table: &tbl,
 	}
-	filter := aion.AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	level := aion.Level{
 		Filter: &filter,
 		Store:  &cache,
@@ -141,11 +137,7 @@ func tempCreateAion() (*aion.Aion, error) {
 		Builder:     builder,
 	}
 	store := aion.NewDynamoDBStore(bs, &tbl2, builder.Multiplier)
-	filter2 := aion.AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter2.Init()
+	filter2 := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	level2 := aion.Level{
 		Filter: &filter2,
 		Store:  store,

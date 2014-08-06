@@ -13,13 +13,9 @@ func TestMemoryCacheDoubleQuery(t *testing.T) {
 		Multiplier: math.Pow10(1),
 	}
 	store.Init()
-	filter := AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
-		Filter: &filter,
+		Filter: filter,
 		Store:  &store,
 	}
 	level.Filter.SetHandler(level.Store.Insert)
@@ -68,13 +64,9 @@ func TestMemoryCache(t *testing.T) {
 		Multiplier: math.Pow10(1),
 	}
 	store.Init()
-	filter := AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
-		Filter: &filter,
+		Filter: filter,
 		Store:  &store,
 	}
 	testLevel(&level, t, time.Second, store.Duration)

@@ -18,11 +18,7 @@ func TestCQLCache(t *testing.T) {
 	cache := CQLCache{
 		Session: session,
 	}
-	filter := AggregationFilter{
-		Granularity:  0,
-		Aggregations: []string{"raw"},
-	}
-	filter.Init()
+	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
 		Filter: &filter,
 		Store:  &cache,
