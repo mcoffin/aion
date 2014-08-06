@@ -2,7 +2,6 @@ package aion
 
 import (
 	"code.google.com/p/go-uuid/uuid"
-	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -35,7 +34,6 @@ func TestMemoryCacheDoubleQuery(t *testing.T) {
 		t.Error(err)
 	}
 	for i := 0; i < 2; i++ {
-		fmt.Printf("Running test %d\n", i)
 		entryC := make(chan Entry)
 		errorC := make(chan error)
 		go func() {
