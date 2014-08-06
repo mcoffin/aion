@@ -1,8 +1,8 @@
-package timedb
+package aion
 
 import (
 	"code.google.com/p/go-uuid/uuid"
-	"github.com/FlukeNetworks/timedb/bucket"
+	"github.com/FlukeNetworks/aion/bucket"
 	"time"
 )
 

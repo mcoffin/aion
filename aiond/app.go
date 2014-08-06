@@ -6,7 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/FlukeNetworks/timedb"
+	"github.com/FlukeNetworks/aion"
 	"github.com/codegangsta/negroni"
 	"github.com/crowdmob/goamz/aws"
 	"github.com/crowdmob/goamz/dynamodb"
@@ -23,7 +23,7 @@ const (
 )
 
 type Context struct {
-	db *timedb.TimeDB
+	db *aion.Aion
 }
 
 type inputPoint struct {
@@ -40,7 +40,7 @@ func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 		writeError(res, http.StatusBadRequest, err)
 		return
 	}
-	e := timedb.Entry{
+	e := aion.Entry{
 		Timestamp:  time.Unix(input.Timestamp, 0),
 		Attributes: input.Attributes,
 	}
@@ -81,7 +81,7 @@ func (self Context) QuerySeries(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	entryC := make(chan timedb.Entry)
+	entryC := make(chan aion.Entry)
 	errorC := make(chan error)
 	go func() {
 		defer close(entryC)
@@ -141,7 +141,7 @@ func main() {
 	flag.Parse()
 
 	// Setup the database context
-	db, err := tempCreateTimeDB()
+	db, err := tempCreateAion()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func main() {
 	http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 }
 
-func tempCreateTimeDB() (*timedb.TimeDB, error) {
+func tempCreateAion() (*aion.Aion, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
 		return nil, err
@@ -189,15 +189,15 @@ func tempCreateTimeDB() (*timedb.TimeDB, error) {
 		Name:   "timedb",
 		Key:    pk,
 	}
-	cache := timedb.DynamoDBCache{
+	cache := aion.DynamoDBCache{
 		Table: &tbl,
 	}
-	filter := timedb.AggregationFilter{
+	filter := aion.AggregationFilter{
 		Granularity:  0,
 		Aggregations: []string{"raw"},
 	}
 	filter.Init()
-	level := timedb.Level{
+	level := aion.Level{
 		Filter: &filter,
 		Store:  &cache,
 	}
@@ -207,26 +207,26 @@ func tempCreateTimeDB() (*timedb.TimeDB, error) {
 		Name:   "timedb-bucket",
 		Key:    pk,
 	}
-	builder := &timedb.MemoryBucketBuilder{
+	builder := &aion.MemoryBucketBuilder{
 		Duration:   60 * time.Second,
 		Multiplier: math.Pow10(1),
 	}
 	builder.Init()
-	bs := timedb.BucketStore{
+	bs := aion.BucketStore{
 		Granularity: 0,
 		Builder:     builder,
 	}
-	store := timedb.NewDynamoDBStore(bs, &tbl2, builder.Multiplier)
-	filter2 := timedb.AggregationFilter{
+	store := aion.NewDynamoDBStore(bs, &tbl2, builder.Multiplier)
+	filter2 := aion.AggregationFilter{
 		Granularity:  0,
 		Aggregations: []string{"raw"},
 	}
 	filter2.Init()
-	level2 := timedb.Level{
+	level2 := aion.Level{
 		Filter: &filter2,
 		Store:  store,
 	}
 
-	db := timedb.New([]timedb.Level{level, level2})
+	db := aion.New([]aion.Level{level, level2})
 	return db, nil
 }

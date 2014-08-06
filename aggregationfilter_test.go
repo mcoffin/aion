@@ -1,4 +1,4 @@
-package timedb
+package aion
 
 import (
 	"testing"

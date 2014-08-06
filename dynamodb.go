@@ -1,11 +1,11 @@
-package timedb
+package aion
 
 import (
 	"bytes"
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/base64"
 	"fmt"
-	"github.com/FlukeNetworks/timedb/bucket"
+	"github.com/FlukeNetworks/aion/bucket"
 	"github.com/crowdmob/goamz/dynamodb"
 	"strconv"
 	"time"

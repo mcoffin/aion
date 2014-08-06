@@ -1,4 +1,4 @@
-package timedb
+package aion
 
 import (
 	"code.google.com/p/go-uuid/uuid"
@@ -45,20 +45,20 @@ type Level struct {
 	Store  SeriesStore
 }
 
-// Root of the TimeDB API
-type TimeDB struct {
+// Root of the Aion API
+type Aion struct {
 	Levels []Level
 }
 
-func New(levels []Level) *TimeDB {
-	ret := &TimeDB{
+func New(levels []Level) *Aion {
+	ret := &Aion{
 		Levels: levels,
 	}
 	ret.createHandlers()
 	return ret
 }
 
-func (self *TimeDB) createHandlers() {
+func (self *Aion) createHandlers() {
 	for i := 0; i < len(self.Levels)-1; i++ {
 		thisLevel := self.Levels[i]
 		nextLevel := self.Levels[i+1]
@@ -80,6 +80,6 @@ func (self *TimeDB) createHandlers() {
 
 // Convenience method for inserting one data point into the first level
 // (possibly triggering rollups
-func (self *TimeDB) Put(series uuid.UUID, entry Entry) error {
+func (self *Aion) Put(series uuid.UUID, entry Entry) error {
 	return self.Levels[0].Filter.Insert(series, entry)
 }

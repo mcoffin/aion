@@ -1,4 +1,4 @@
-package timedb
+package aion
 
 import (
 	"github.com/crowdmob/goamz/aws"
