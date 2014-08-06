@@ -99,7 +99,7 @@ func tempCreateAion() (*aion.Aion, error) {
 		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
 	}
 	pk := dynamodb.PrimaryKey{
-	KeyAttribute: &dynamodb.Attribute{
+		KeyAttribute: &dynamodb.Attribute{
 			Name: "series",
 			Type: "S",
 		},
