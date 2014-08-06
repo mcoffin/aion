@@ -82,7 +82,7 @@ func (self *AggregationFilter) Insert(series uuid.UUID, entry Entry) error {
 	}
 
 	if self.Granularity == 0 {
-		self.Flush(series)
+		return self.Flush(series)
 	}
 
 	return err
