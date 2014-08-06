@@ -25,7 +25,6 @@ type Entry struct {
 type Filter interface {
 	Insert(series uuid.UUID, entry Entry) error
 	SetHandler(handler func(uuid.UUID, Entry) error)
-	Flush(series uuid.UUID) error
 }
 
 // Interface for something that can provide time series data back
