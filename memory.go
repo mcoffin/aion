@@ -63,7 +63,8 @@ func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, 
 	}
 	for _, a := range attributes {
 		bkt.context(a).encoder.Close()
-		decs[a] = bucket.NewBucketDecoder(0, &bkt.context(a).buffer)
+		buf := bytes.NewBuffer(bkt.context(a).buffer.Bytes())
+		decs[a] = bucket.NewBucketDecoder(0, buf)
 	}
 	return bucketEntryReader(series, self.Multiplier, decs, attributes)
 }
