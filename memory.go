@@ -59,7 +59,7 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, bkt *memoryBucket, attributes []string) EntryReader {
 	bkt.context(TimeAttribute).encoder.Close()
 	decs := map[string]*bucket.BucketDecoder{
-		TimeAttribute: bucket.NewBucketDecoder(start.Unix(), &bkt.context(TimeAttribute).buffer),
+		TimeAttribute: bucket.NewBucketDecoder(start.Unix(), bytes.NewBuffer(bkt.context(TimeAttribute).buffer.Bytes())),
 	}
 	for _, a := range attributes {
 		bkt.context(a).encoder.Close()
