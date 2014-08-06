@@ -30,7 +30,6 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 			}
 		}
 	}
-	level.Filter.Flush(series)
 	entryC := make(chan Entry)
 	errorC := make(chan error)
 	go func() {
