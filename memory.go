@@ -28,6 +28,7 @@ func (self *memoryBucket) context(attribute string) *memoryBucketAttribute {
 type MemoryBucketBuilder struct {
 	Duration   time.Duration
 	Multiplier float64
+	Source     Querier
 	contexts   map[string]map[time.Time]*memoryBucket
 }
 
@@ -52,6 +53,14 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 			contexts: map[string]*memoryBucketAttribute{},
 		}
 		seriesMap[startTime] = bkt
+
+		// Insert data from querier
+		// TODO: should handle errors
+		if self.Source != nil {
+			ForAllQuery(series, startTime, startTime.Add(self.Duration), nil, self.Source, func(e Entry) {
+				self.Insert(series, e)
+			})
+		}
 	}
 	return bkt, startTime
 }

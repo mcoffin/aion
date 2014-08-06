@@ -82,3 +82,25 @@ func (self *Aion) createHandlers() {
 func (self *Aion) Put(series uuid.UUID, entry Entry) error {
 	return self.Levels[0].Filter.Insert(series, entry)
 }
+
+func ForAllQuery(series uuid.UUID, start, end time.Time, attributes []string, q Querier, handler func(Entry)) error {
+	var err error
+	entryC := make(chan Entry)
+	errorC := make(chan error)
+	go func() {
+		defer close(entryC)
+		q.Query(series, start, end, attributes, entryC, errorC)
+	}()
+loop:
+	for {
+		select {
+		case err = <-errorC:
+		case e, more := <-entryC:
+			if !more {
+				break loop
+			}
+			handler(e)
+		}
+	}
+	return err
+}
