@@ -3,6 +3,28 @@ timedb
 
 Cascading time series database with fast tags
 
+# Dev Env Setup
+
+First, create a `GOPATH`. Your `GOPATH` is effectively a workspace for **all** your go code. A very common GOPATH is `$HOME/go`. Once you have chosen your GOPATH, run the following:
+
+````bash
+export GOPATH=<your gopath>
+mkdir -p $GOPATH
+
+export PATH=$PATH:$GOPATH/bin
+````
+
+After your gopath is set up, you have two options to download the repository.
+
+1. Simply run `go get github.com/FlukeNetworks/aion` to have the go tool automatically attempt to download and install the code for you.
+2. Manually clone the repository
+   * `mkdir -p $GOPATH/src/github.com/FlukeNetworks && cd $_`
+   * `git clone https://github.com/FlukeNetworks/aion.git`
+
+## DynamoDB
+
+Make sure to install the AWS CLI tools and DynamoDB Local. Set the default region for your AWS CLI to be `us-west-1`, then run the `create-tables.sh` script from the repository. After this script has been run, you should be able to properly run the unit tests with `go test`.
+
 # Architecture
 
 Data in timedb is stored in **query levels**. A query level represents a scheme from both inserting and querying data from some kind of storage.
