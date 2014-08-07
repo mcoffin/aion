@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/bucket"
+	"io"
 	"time"
 )
 
@@ -66,6 +67,11 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 }
 
 func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, bkt *memoryBucket, attributes []string) EntryReader {
+	if bkt.context(TimeAttribute).encoder == nil {
+		return entryReaderFunc(func(entries []Entry) (int, error) {
+			return 0, io.EOF
+		})
+	}
 	bkt.context(TimeAttribute).encoder.Close()
 	decs := map[string]*bucket.BucketDecoder{
 		TimeAttribute: bucket.NewBucketDecoder(start.Unix(), bytes.NewBuffer(bkt.context(TimeAttribute).buffer.Bytes())),
@@ -81,10 +87,12 @@ func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	seriesStr := series.String()
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
+		shouldDelete := false
 		bucket := self.contexts[seriesStr][t]
 		// If we don't have this bucket, then move on down the line
 		if bucket == nil {
-			continue
+			shouldDelete = true
+			bucket, _ = self.bucket(series, t)
 		}
 		reader := self.entryReader(series, t, bucket, attributes)
 		entryBuf := make([]Entry, 1)
@@ -106,6 +114,9 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 			if err != nil {
 				break
 			}
+		}
+		if shouldDelete {
+			delete(self.contexts[seriesStr], t)
 		}
 	}
 }
