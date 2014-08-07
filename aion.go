@@ -5,12 +5,15 @@ import (
 	"time"
 )
 
+// Generalization for something that can read entries in to a buffer
 type EntryReader interface {
 	ReadEntries(entries []Entry) (int, error)
 }
 
+// Convenience type for using a read function as a full-fledged EntryReader
 type entryReaderFunc (func([]Entry) (int, error))
 
+// entryReaderFunc implements the EntryReader interface
 func (self entryReaderFunc) ReadEntries(entries []Entry) (int, error) {
 	return self(entries)
 }
@@ -49,6 +52,7 @@ type Aion struct {
 	Levels []Level
 }
 
+// Creates a new Aion instance with a given set of levels
 func New(levels []Level) *Aion {
 	ret := &Aion{
 		Levels: levels,
@@ -57,6 +61,7 @@ func New(levels []Level) *Aion {
 	return ret
 }
 
+// "Hooks-up" the levels in an Aion instance. Usually called from New()
 func (self *Aion) createHandlers() {
 	for i := 0; i < len(self.Levels)-1; i++ {
 		thisLevel := self.Levels[i]
@@ -83,6 +88,7 @@ func (self *Aion) Put(series uuid.UUID, entry Entry) error {
 	return self.Levels[0].Filter.Insert(series, entry)
 }
 
+// Convenience method for querying. Handles concurrency for you, calling `handler` for every entry that is queried out
 func ForAllQuery(series uuid.UUID, start, end time.Time, attributes []string, q Querier, handler func(Entry)) error {
 	var err error
 	entryC := make(chan Entry)

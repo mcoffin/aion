@@ -6,19 +6,23 @@ import (
 	"time"
 )
 
+// A FilterBase contains the components that every filter will contain
 type FilterBase struct {
 	handler (func(uuid.UUID, Entry) error)
 }
 
+// FilterBase implements part of the Filter interface
 func (self *FilterBase) SetHandler(handler func(uuid.UUID, Entry) error) {
 	self.handler = handler
 }
 
+// context for a bunch of aggregations over a period
 type aggregatorContext struct {
 	end         time.Time
 	aggregators map[string]aggregate.Aggregator
 }
 
+// an AggregateFilter is a filter that uses the `aggregate` package to roll up data
 type AggregateFilter struct {
 	FilterBase
 	Granularity time.Duration
@@ -26,6 +30,7 @@ type AggregateFilter struct {
 	contexts    map[string]map[time.Time]*aggregatorContext
 }
 
+// Creates a new AggregateFilter
 func NewAggregateFilter(granularity time.Duration, aggregators []string, handler func(uuid.UUID, Entry) error) *AggregateFilter {
 	return &AggregateFilter{
 		FilterBase: FilterBase{
@@ -37,10 +42,13 @@ func NewAggregateFilter(granularity time.Duration, aggregators []string, handler
 	}
 }
 
+// Convenience method for getting the start time of the aggregatorContext to which `t`
+// should belong
 func (self AggregateFilter) aggregatorTime(t time.Time) time.Time {
 	return t.Truncate(self.Granularity)
 }
 
+// Convenience method for getting a context if it exists, and creating/filling it if it doesn't
 func (self *AggregateFilter) context(series uuid.UUID, entry Entry) (*aggregatorContext, error) {
 	seriesStr := series.String()
 	if self.contexts[seriesStr] == nil {
@@ -64,6 +72,7 @@ func (self *AggregateFilter) context(series uuid.UUID, entry Entry) (*aggregator
 	return self.contexts[seriesStr][t], nil
 }
 
+// AggregateFilter implements the Filter interface
 func (self *AggregateFilter) Insert(series uuid.UUID, entry Entry) error {
 	// First, add the new value to the context it needs to be in
 	ctx, err := self.context(series, entry)

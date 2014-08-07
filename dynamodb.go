@@ -11,11 +11,13 @@ import (
 	"time"
 )
 
+// A DynamoDBStore is a bucket storage implementation using DynamoDB as its backing
 type DynamoDBStore struct {
 	BucketStore
 	repo DynamoDBRepository
 }
 
+// Creates a new DynamoDBStore 
 func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float64) *DynamoDBStore {
 	ret := &DynamoDBStore{
 		store,
@@ -29,12 +31,14 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float
 	return ret
 }
 
+// Implementation of the BucketRepository interface using DynamoDB to store buckets
 type DynamoDBRepository struct {
 	Multiplier  float64
 	Granularity time.Duration
 	Table       *dynamodb.Table
 }
 
+// DynamoDBRepository implements the BucketRepository interface
 func (self DynamoDBRepository) Put(series uuid.UUID, granularity time.Duration, start time.Time, attributes []EncodedBucketAttribute) error {
 	hashKey := fmt.Sprintf("%s|%d", series.String(), int64(granularity.Seconds()))
 	rangeKey := fmt.Sprintf("%d", start.Unix())
@@ -50,6 +54,7 @@ func (self DynamoDBRepository) Put(series uuid.UUID, granularity time.Duration, 
 	return err
 }
 
+// Convenience function for creating an EntryReader from dynamodb query results
 func (self DynamoDBRepository) entryReader(series uuid.UUID, item map[string]*dynamodb.Attribute, attributes []string) (EntryReader, error) {
 	tData, err := base64.StdEncoding.DecodeString(item[TimeAttribute].Value)
 	if err != nil {
@@ -72,6 +77,7 @@ func (self DynamoDBRepository) entryReader(series uuid.UUID, item map[string]*dy
 	return bucketEntryReader(series, self.Multiplier, decs, attributes), nil
 }
 
+// DynamoDBRepository implements the BucketRepository interface
 func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	comparisons := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", fmt.Sprintf("%s|%d", series.String(), int64(self.Granularity.Seconds()))),
@@ -112,10 +118,12 @@ func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, att
 	}
 }
 
+// Implementation of a seriesStore using DynamoDB to cache raw data
 type DynamoDBCache struct {
 	Table *dynamodb.Table
 }
 
+// DynamoDBCache implements the SeriesStore interface
 func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	conditions := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", series.String()),
@@ -155,6 +163,7 @@ func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attribu
 	}
 }
 
+// DynamoDBCache implements the SeriesStore interface
 func (self *DynamoDBCache) Insert(series uuid.UUID, entry Entry) error {
 	attribs := []dynamodb.Attribute{
 		dynamodb.Attribute{

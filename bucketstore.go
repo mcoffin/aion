@@ -10,16 +10,20 @@ const (
 	TimeAttribute = "times"
 )
 
+// An EncodedAttribute represents a series of encoded numbers
+// for example, all of the "avg" numbers in a given bucket
 type EncodedBucketAttribute struct {
 	Name string
 	Data []byte
 }
 
+// A BucketRepository represents a persistent store for buckets (probably on disc somewhere)
 type BucketRepository interface {
 	Querier
 	Put(series uuid.UUID, granularity time.Duration, start time.Time, attributes []EncodedBucketAttribute) error
 }
 
+// A BucketBuilder represents a cache for buckets while they are being built
 type BucketBuilder interface {
 	SeriesStore
 	BucketsToWrite(series uuid.UUID) []time.Time
@@ -27,12 +31,15 @@ type BucketBuilder interface {
 	Delete(series uuid.UUID, start time.Time)
 }
 
+// A BucketStore represents a composition of a BucketRepository and a BucketBuilder
+// to make a fully persistent bucket storage scheme
 type BucketStore struct {
 	Granularity time.Duration
 	Repository  BucketRepository
 	Builder     BucketBuilder
 }
 
+// BucketStore implements the SeriesStore interface
 func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	// Query from memory and then from the repo
 	queriers := []Querier{self.Repository, self.Builder}
@@ -41,6 +48,7 @@ func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attribute
 	}
 }
 
+// BucketStore implements the SeriesStore interface
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	err := self.Builder.Insert(series, entry)
 	if err != nil {
@@ -66,6 +74,7 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	return nil
 }
 
+// Convenience function for creating an EntryReader from a set of BucketDecoders and their surrounding context
 func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bucket.BucketDecoder, attributes []string) EntryReader {
 	ret := func(entries []Entry) (int, error) {
 		iBuf := make([]int64, len(entries))
