@@ -31,22 +31,3 @@ func TestEncodeDecode(t *testing.T) {
 		}
 	}
 }
-
-const bufSize = 3
-
-func TestBlock(t *testing.T) {
-	block := NewBlock(start, len(testBucketData))
-	for i, values := range testBucketData {
-		block.WriteBucket(i, values)
-	}
-	buf := make([]int64, bufSize)
-	for i, values := range testBucketData {
-		decoded := block.ReadBucket(i, buf)
-		for index, value := range decoded {
-			t.Logf("Testing index %d for bucket %d\n", index, i)
-			if value != values[index] {
-				t.Errorf("Decoded value %d from bucket %d at index %d doesn't match expectation %d\n", value, i, index, values[index])
-			}
-		}
-	}
-}
