@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/FlukeNetworks/aion"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -71,6 +72,8 @@ func (self Context) QuerySeries(res http.ResponseWriter, req *http.Request) {
 		defer close(entryC)
 		self.db.Levels[level].Store.Query(seriesUUID, start, end, params["a"], entryC, errorC)
 	}()
+	fmt.Fprint(res, "[")
+	isFirst := true
 loop:
 	for {
 		select {
@@ -80,7 +83,13 @@ loop:
 			if !more {
 				break loop
 			}
+			if !isFirst {
+				fmt.Fprint(res, ",")
+			} else {
+				isFirst = false
+			}
 			res.Write(mustMarshal(e))
 		}
 	}
+	fmt.Fprint(res, "]")
 }
