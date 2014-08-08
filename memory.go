@@ -59,7 +59,9 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 		// TODO: should handle errors
 		if self.Source != nil {
 			ForAllQuery(series, startTime, startTime.Add(self.Duration), nil, self.Source, func(e Entry) {
-				self.Insert(series, e)
+				if e.Timestamp.After(startTime) && e.Timestamp.Before(startTime.Add(self.Duration)) {
+					self.Insert(series, e)
+				}
 			})
 		}
 	}
