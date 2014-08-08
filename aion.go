@@ -67,11 +67,11 @@ func (self *Aion) createHandlers() {
 		thisLevel := self.Levels[i]
 		nextLevel := self.Levels[i+1]
 		thisLevel.Filter.SetHandler(func(series uuid.UUID, entry Entry) error {
-			err := thisLevel.Store.Insert(series, entry)
+			err := nextLevel.Filter.Insert(series, entry)
 			if err != nil {
 				return err
 			}
-			err = nextLevel.Filter.Insert(series, entry)
+			err = thisLevel.Store.Insert(series, entry)
 			if err != nil {
 				return err
 			}
