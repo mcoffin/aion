@@ -17,7 +17,7 @@ type DynamoDBStore struct {
 	repo DynamoDBRepository
 }
 
-// Creates a new DynamoDBStore 
+// Creates a new DynamoDBStore
 func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float64) *DynamoDBStore {
 	ret := &DynamoDBStore{
 		store,
@@ -79,10 +79,25 @@ func (self DynamoDBRepository) entryReader(series uuid.UUID, item map[string]*dy
 
 // DynamoDBRepository implements the BucketRepository interface
 func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	timeComparison := dynamodb.AttributeComparison{
+		AttributeName:      "time",
+		ComparisonOperator: dynamodb.COMPARISON_BETWEEN,
+		AttributeValueList: []dynamodb.Attribute{
+			dynamodb.Attribute{
+				Type:  dynamodb.TYPE_NUMBER,
+				Name:  "time",
+				Value: fmt.Sprintf("%d", start.Unix()),
+			},
+			dynamodb.Attribute{
+				Type:  dynamodb.TYPE_NUMBER,
+				Name:  "time",
+				Value: fmt.Sprintf("%d", end.Unix()),
+			},
+		},
+	}
 	comparisons := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", fmt.Sprintf("%s|%d", series.String(), int64(self.Granularity.Seconds()))),
-		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_GREATER_THAN_OR_EQUAL, start.Unix()),
-		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_LESS_THAN, end.Unix()),
+		timeComparison,
 	}
 	items, err := self.Table.Query(comparisons)
 	if err != nil {
@@ -125,10 +140,25 @@ type DynamoDBCache struct {
 
 // DynamoDBCache implements the SeriesStore interface
 func (self *DynamoDBCache) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	timeComparison := dynamodb.AttributeComparison{
+		AttributeName:      "time",
+		ComparisonOperator: dynamodb.COMPARISON_BETWEEN,
+		AttributeValueList: []dynamodb.Attribute{
+			dynamodb.Attribute{
+				Type:  dynamodb.TYPE_NUMBER,
+				Name:  "time",
+				Value: fmt.Sprintf("%d", start.Unix()),
+			},
+			dynamodb.Attribute{
+				Type:  dynamodb.TYPE_NUMBER,
+				Name:  "time",
+				Value: fmt.Sprintf("%d", end.Unix()),
+			},
+		},
+	}
 	conditions := []dynamodb.AttributeComparison{
 		*dynamodb.NewEqualStringAttributeComparison("series", series.String()),
-		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_GREATER_THAN_OR_EQUAL, start.Unix()),
-		*dynamodb.NewNumericAttributeComparison("time", dynamodb.COMPARISON_LESS_THAN_OR_EQUAL, end.Unix()),
+		timeComparison,
 	}
 	items, err := self.Table.Query(conditions)
 	if err != nil {

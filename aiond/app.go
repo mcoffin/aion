@@ -130,7 +130,7 @@ func tempCreateAion() (*aion.Aion, error) {
 	builder := &aion.MemoryBucketBuilder{
 		Duration:   60 * time.Second,
 		Multiplier: math.Pow10(1),
-		Source: &cache,
+		Source:     &cache,
 	}
 	builder.Init()
 	bs := aion.BucketStore{
