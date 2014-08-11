@@ -1,6 +1,5 @@
 package aion
 
-/*
 import (
 	"github.com/gocql/gocql"
 	"testing"
@@ -20,9 +19,8 @@ func TestCQLCache(t *testing.T) {
 	}
 	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
-		Filter: &filter,
+		Filter: filter,
 		Store:  &cache,
 	}
 	testLevel(&level, t, time.Second, 60*time.Second)
 }
-*/
