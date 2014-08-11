@@ -56,9 +56,10 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 		self.contexts[series.String()] = seriesMap
 	}
 	startTime := self.bucketStartTime(t)
-	bktKey := &memoryBucket{start: t}
+	bktKey := &memoryBucket{start: startTime}
+	item := seriesMap.Get(bktKey)
 	var bkt *memoryBucket
-	if !seriesMap.Has(bktKey) {
+	if item == nil {
 		bkt = &memoryBucket{
 			start:    startTime,
 			contexts: map[string]*memoryBucketAttribute{},
@@ -73,7 +74,7 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 			})
 		}
 	} else {
-		bkt = seriesMap.Get(bktKey).(*memoryBucket)
+		bkt = item.(*memoryBucket)
 	}
 	return bkt, startTime
 }
@@ -101,12 +102,11 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
 		shouldDelete := false
 		tree := self.contexts[seriesStr]
-		// If we don't have a bucket tree, then we won't have one later
-		if tree == nil {
-			break
-		}
 		bktKey := &memoryBucket{start: t}
-		item := tree.Get(bktKey)
+		var item btree.Item
+		if tree != nil {
+			item = tree.Get(bktKey)
+		}
 		var bucket *memoryBucket
 		// If we don't have this bucket, then move on down the line
 		if item == nil {
