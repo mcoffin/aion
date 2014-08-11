@@ -13,12 +13,13 @@ type CQLStore struct {
 	repo CQLRepository
 }
 
-func NewCQLStore(store BucketStore, session *gocql.Session, multiplier float64) *CQLStore {
+func NewCQLStore(store BucketStore, session *gocql.Session, multiplier float64, duration time.Duration) *CQLStore {
 	ret := &CQLStore{
 		store,
 		CQLRepository{
 			Multiplier: multiplier,
 			Granularity: store.Granularity,
+			Duration: duration,
 			Session: session,
 		},
 	}
@@ -29,6 +30,7 @@ func NewCQLStore(store BucketStore, session *gocql.Session, multiplier float64) 
 type CQLRepository struct {
 	Multiplier float64
 	Granularity time.Duration
+	Duration time.Duration
 	Session *gocql.Session
 }
 
@@ -60,12 +62,13 @@ func (self CQLRepository) entryReader(series uuid.UUID, start time.Time, attribM
 
 // CQLRepository implements the BucketRepository interface
 func (self CQLRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	firstStartTime := start.Truncate(self.Duration)
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		errors <- err
 		return
 	}
-	iter := self.Session.Query("SELECT time, attribs FROM buckets WHERE series = ? and time >= ? and time <= ?", seriesUUID, start, end).Iter()
+	iter := self.Session.Query("SELECT time, attribs FROM buckets WHERE series = ? and time >= ? and time <= ?", seriesUUID, firstStartTime, end).Iter()
 
 	var t time.Time
 	var attribMap map[string][]byte

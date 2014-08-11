@@ -42,7 +42,7 @@ func TestCQLStore(t *testing.T) {
 		Granularity: 0,
 		Builder: builder,
 	}
-	store := NewCQLStore(bs, session, builder.Multiplier)
+	store := NewCQLStore(bs, session, builder.Multiplier, builder.Duration)
 	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
 		Filter: filter,
