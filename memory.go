@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/bucket"
+	"github.com/google/btree"
 	"io"
 	"time"
 )
@@ -14,7 +15,14 @@ type memoryBucketAttribute struct {
 }
 
 type memoryBucket struct {
+	start    time.Time
 	contexts map[string]*memoryBucketAttribute
+}
+
+// memoryBucket implements the btree.Item interface
+func (a *memoryBucket) Less(b btree.Item) bool {
+	other := b.(*memoryBucket)
+	return a.start.Before(other.start)
 }
 
 func (self *memoryBucket) context(attribute string) *memoryBucketAttribute {
@@ -30,11 +38,11 @@ type MemoryBucketBuilder struct {
 	Duration   time.Duration
 	Multiplier float64
 	Source     Querier
-	contexts   map[string]map[time.Time]*memoryBucket
+	contexts   map[string]*btree.BTree
 }
 
 func (self *MemoryBucketBuilder) Init() {
-	self.contexts = map[string]map[time.Time]*memoryBucket{}
+	self.contexts = map[string]*btree.BTree{}
 }
 
 func (self MemoryBucketBuilder) bucketStartTime(t time.Time) time.Time {
@@ -44,16 +52,19 @@ func (self MemoryBucketBuilder) bucketStartTime(t time.Time) time.Time {
 func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryBucket, time.Time) {
 	seriesMap := self.contexts[series.String()]
 	if seriesMap == nil {
-		seriesMap = map[time.Time]*memoryBucket{}
+		seriesMap = btree.New(2) // TODO: actually come up with a sensible degree
 		self.contexts[series.String()] = seriesMap
 	}
 	startTime := self.bucketStartTime(t)
-	bkt := seriesMap[startTime]
-	if bkt == nil {
+	bktKey := &memoryBucket{start: startTime}
+	item := seriesMap.Get(bktKey)
+	var bkt *memoryBucket
+	if item == nil {
 		bkt = &memoryBucket{
+			start:    startTime,
 			contexts: map[string]*memoryBucketAttribute{},
 		}
-		seriesMap[startTime] = bkt
+		seriesMap.ReplaceOrInsert(bkt)
 
 		// Insert data from querier
 		// TODO: should handle errors
@@ -62,6 +73,8 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 				self.Insert(series, e)
 			})
 		}
+	} else {
+		bkt = item.(*memoryBucket)
 	}
 	return bkt, startTime
 }
@@ -88,11 +101,19 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 	seriesStr := series.String()
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
 		shouldDelete := false
-		bucket := self.contexts[seriesStr][t]
+		tree := self.contexts[seriesStr]
+		bktKey := &memoryBucket{start: t}
+		var item btree.Item
+		if tree != nil {
+			item = tree.Get(bktKey)
+		}
+		var bucket *memoryBucket
 		// If we don't have this bucket, then move on down the line
-		if bucket == nil {
+		if item == nil {
 			shouldDelete = true
 			bucket, _ = self.bucket(series, t)
+		} else {
+			bucket = item.(*memoryBucket)
 		}
 		reader := self.entryReader(series, t, bucket, attributes)
 		entryBuf := make([]Entry, 1)
@@ -116,7 +137,7 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 			}
 		}
 		if shouldDelete {
-			delete(self.contexts[seriesStr], t)
+			tree.Delete(bktKey)
 		}
 	}
 }
@@ -142,31 +163,28 @@ func (self *MemoryBucketBuilder) Insert(series uuid.UUID, entry Entry) error {
 
 func (self *MemoryBucketBuilder) BucketsToWrite(series uuid.UUID) []time.Time {
 	seriesMap := self.contexts[series.String()]
-	if seriesMap == nil || len(seriesMap) < 2 {
+	if seriesMap == nil || seriesMap.Len() < 2 {
 		return nil
 	}
-	var largest *time.Time
-	for t, _ := range seriesMap {
-		if largest == nil || t.After(*largest) {
-			largest = &t
-		}
-	}
-	ret := make([]time.Time, len(seriesMap)-1)
+	ret := make([]time.Time, seriesMap.Len()-1)
+	largestBucket := seriesMap.DeleteMax().(*memoryBucket)
 	i := 0
-	for t, _ := range seriesMap {
-		if t.Before(*largest) {
-			ret[i] = t
-			i++
-		}
-	}
+	seriesMap.AscendLessThan(largestBucket, btree.ItemIterator(func(item btree.Item) bool {
+		t := item.(*memoryBucket).start
+		ret[i] = t
+		i++
+		return true
+	}))
+	seriesMap.ReplaceOrInsert(largestBucket)
 	return ret
 }
 
 func (self *MemoryBucketBuilder) Get(series uuid.UUID, start time.Time) ([]EncodedBucketAttribute, error) {
-	bkt := self.contexts[series.String()][start]
-	if bkt == nil {
+	item := self.contexts[series.String()].Get(&memoryBucket{start: start})
+	if item == nil {
 		return nil, nil
 	}
+	bkt := item.(*memoryBucket)
 	ret := make([]EncodedBucketAttribute, len(bkt.contexts))
 	i := 0
 	for name, ctx := range bkt.contexts {
@@ -185,5 +203,5 @@ func (self *MemoryBucketBuilder) Delete(series uuid.UUID, t time.Time) {
 	if seriesMap == nil {
 		return
 	}
-	delete(seriesMap, t)
+	seriesMap.Delete(&memoryBucket{start: t})
 }
