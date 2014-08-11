@@ -43,8 +43,16 @@ type BucketStore struct {
 func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	// Query from memory and then from the repo
 	queriers := []Querier{self.Repository, self.Builder}
+	lastTime := start
 	for _, q := range queriers {
-		q.Query(series, start, end, attributes, entries, errors)
+		err := ForAllQuery(series, lastTime, end, attributes, q, func(e Entry) {
+			lastTime = e.Timestamp
+			entries <- e
+		})
+		if err != nil {
+			errors <- err
+			return
+		}
 	}
 }
 
