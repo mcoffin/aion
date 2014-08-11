@@ -7,16 +7,13 @@ if [ -z "$1" ] ; then
 	exit 2
 fi
 
-if [ "$1" == "recreate" ] ; then
-	$SCRIPT_PATH/recreate-tables-dynamo.py
-	exit 0
-elif [ "$1" == "create" ] ; then
-	$SCRIPT_PATH/create-tables-dynamo.sh
-	exit 0
-elif [ "$1" == "delete" ] ; then
-	$SCRIPT_PATH/delete-tables-dynamo.sh
-	exit 0
-fi
+SCRIPT_NAME=$1-tables-dynamo.sh
+SCRIPT=$SCRIPT_PATH/$SCRIPT_NAME
 
-echo Unrecognized command \'$1\'
-exit 1
+if [ -x $SCRIPT ] ; then
+	$SCRIPT
+	exit 0
+else
+	echo Unrecognized command \'$1\'
+	exit 1
+fi
