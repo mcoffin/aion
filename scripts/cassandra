@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SCRIPT_PATH=$(dirname $0)
+
+if [ -z "$1" ] ; then
+	echo 'usage: cassandra <command>'
+	exit 2
+fi
+
+if [ "$1" == "recreate" ] ; then
+	$SCRIPT_PATH/recreate-tables-cassandra.py
+	exit 0
+fi
+
+echo Unrecognized command \'$1\'
+exit 1

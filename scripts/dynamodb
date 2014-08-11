@@ -1,0 +1,22 @@
+#!/bin/bash
+
+SCRIPT_PATH=$(dirname $0)
+
+if [ -z "$1" ] ; then
+	echo 'usage: cassandra <command>'
+	exit 2
+fi
+
+if [ "$1" == "recreate" ] ; then
+	$SCRIPT_PATH/recreate-tables-dynamo.py
+	exit 0
+elif [ "$1" == "create" ] ; then
+	$SCRIPT_PATH/create-tables-dynamo.sh
+	exit 0
+elif [ "$1" == "delete" ] ; then
+	$SCRIPT_PATH/delete-tables-dynamo.sh
+	exit 0
+fi
+
+echo Unrecognized command \'$1\'
+exit 1
