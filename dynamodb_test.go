@@ -49,7 +49,7 @@ func TestDynamoDBStore(t *testing.T) {
 		Granularity: 0,
 		Builder:     builder,
 	}
-	store := NewDynamoDBStore(bs, &tbl, builder.Multiplier)
+	store := NewDynamoDBStore(bs, &tbl, builder.Multiplier, builder.Duration)
 	filter := NewAggregateFilter(0, []string{"raw"}, nil)
 	level := Level{
 		Filter: filter,

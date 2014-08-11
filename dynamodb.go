@@ -18,12 +18,13 @@ type DynamoDBStore struct {
 }
 
 // Creates a new DynamoDBStore
-func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float64) *DynamoDBStore {
+func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float64, duration time.Duration) *DynamoDBStore {
 	ret := &DynamoDBStore{
 		store,
 		DynamoDBRepository{
 			Multiplier:  multiplier,
 			Granularity: store.Granularity,
+			Duration: duration,
 			Table:       table,
 		},
 	}
@@ -35,6 +36,7 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float
 type DynamoDBRepository struct {
 	Multiplier  float64
 	Granularity time.Duration
+	Duration time.Duration
 	Table       *dynamodb.Table
 }
 
@@ -86,7 +88,7 @@ func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, att
 			dynamodb.Attribute{
 				Type:  dynamodb.TYPE_NUMBER,
 				Name:  "time",
-				Value: fmt.Sprintf("%d", start.Unix()),
+				Value: fmt.Sprintf("%d", start.Truncate(self.Duration).Unix()),
 			},
 			dynamodb.Attribute{
 				Type:  dynamodb.TYPE_NUMBER,
