@@ -3,10 +3,39 @@ package aion
 import (
 	"bytes"
 	"code.google.com/p/go-uuid/uuid"
+	"fmt"
 	"github.com/FlukeNetworks/aion/bucket"
 	"github.com/gocql/gocql"
 	"time"
 )
+
+type CQLTagStore struct {
+	ColumnFamily string
+	Session *gocql.Session
+}
+
+// CQLTagStore implements the TagStore interface
+func (self CQLTagStore) Tag(series uuid.UUID, tags []Tag) error {
+	seriesUUID, err := gocql.UUIDFromBytes(series)
+	if err != nil {
+		return err
+	}
+
+	batch := self.Session.NewBatch(gocql.LoggedBatch)
+
+	// Manually allocate memory so that it isn't done at every step
+	// NOTE: not using gocql.Batch.Query to build entries
+	batch.Entries = make([]gocql.BatchEntry, len(tags))
+	stmt := fmt.Sprintf("INSERT INTO %s (tag, value, series) VALUES (?, ?, ?)", self.ColumnFamily)
+	for i, t := range tags {
+		batch.Entries[i] = gocql.BatchEntry{
+			Stmt: stmt,
+			Args: []interface{}{t.Name, t.Value, seriesUUID},
+		}
+	}
+
+	return self.Session.ExecuteBatch(batch)
+}
 
 type CQLStore struct {
 	BucketStore

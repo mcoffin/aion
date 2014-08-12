@@ -41,6 +41,18 @@ type SeriesStore interface {
 	Insert(series uuid.UUID, entry Entry) error
 }
 
+// A tag for a time series
+type Tag struct {
+	Name string
+	Value string
+}
+
+// Interface for storing tag,value,series triples
+type TagStore interface {
+	Tag(series uuid.UUID, tags []Tag) error
+	Find(tags []Tag) ([]uuid.UUID, error)
+}
+
 // A level represents one granularity of data storage in timedb
 type Level struct {
 	Filter Filter

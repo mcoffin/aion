@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+func TestCQLTagStore(t *testing.T) {
+	cluster := gocql.NewCluster("172.28.128.2")
+	cluster.Keyspace = "timedb"
+	session, err := cluster.CreateSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	store := CQLTagStore{
+		ColumnFamily: "tags",
+		Session: session,
+	}
+	testTagStore(store, t)
+}
+
 func TestCQLCache(t *testing.T) {
 	cluster := gocql.NewCluster("172.28.128.2")
 	cluster.Keyspace = "timedb"
