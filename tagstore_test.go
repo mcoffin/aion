@@ -12,4 +12,5 @@ func testTagStore(store TagStore, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, err = store.Find(testTags)
 }

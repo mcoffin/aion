@@ -43,8 +43,8 @@ type SeriesStore interface {
 
 // A tag for a time series
 type Tag struct {
-	Name string
-	Value string
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // Interface for storing tag,value,series triples
