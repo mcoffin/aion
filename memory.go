@@ -203,5 +203,6 @@ func (self *MemoryBucketBuilder) Delete(series uuid.UUID, t time.Time) {
 	if seriesMap == nil {
 		return
 	}
+	// TODO: set TTL on source data
 	seriesMap.Delete(&memoryBucket{start: t})
 }
