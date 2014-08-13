@@ -53,10 +53,20 @@ func (self CayleyTagStore) Find(tags []Tag) ([]uuid.UUID, error) {
 	result.All();
 	`
 	fmt.Fprintf(queryBuilder, "%s');\n%s", string(tagsJson), queryBase)
-	series := make(chan map[string]interface{})
-	go session.GetQuery(queryBuilder.String(), series)
+	fmt.Println(queryBuilder.String())
+	series := make(chan interface{})
+	go session.ExecInput(queryBuilder.String(), series, 0)
 	for item := range series {
-		fmt.Println(item)
+		session.BuildJson(item)
 	}
-	return nil, nil
+	genRes, err := session.GetJson()
+	if err != nil {
+		return nil, err
+	}
+	ret := []uuid.UUID{}
+	for _, item := range genRes {
+		m := item.(map[string]string)
+		ret = append(ret, uuid.Parse(m["id"]))
+	}
+	return ret, nil
 }
