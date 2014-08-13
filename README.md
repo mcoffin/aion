@@ -34,3 +34,29 @@ To use the CQL backing stores, you must run a Cassandra cluter/machine. Be sure 
 ## Cayley
 
 In order to use the cayley backing store, you must initialize a Cayley database somewhere, then edit the information of the Cayley database in to the setup routine of the REST api in `aiond/app.go`. This will not be permanent as `aiond` will eventually load all of its configuration from its environment.
+
+# Design
+
+Aion stores data in **levels**. A level represents two things.
+
+1. A strategy for turning input data in to aggregated data. This is called a **filter**. 
+   * Example: a passthrough filter is a filter where "aggregated" data is equal to input data
+   * Example: A filter could be defined to emit 5min averages of input data.
+2. A strategy for storing aggregated data. This is called a **series store**.
+   * At the most basic level, this is just a database that stores a time series. On a more complex level, it could be a bucketized storage scheme.
+
+In the Go API, an Aion level is represented by the following data structure.
+
+````go
+// A level represents one granularity of data storage in timedb
+type Level struct {
+	Filter Filter
+	Store  SeriesStore
+}
+````
+
+## Bucketized storage
+
+To cut down on the costs of metadata storage, Aion provides some utilities for defining *series stores* that store compressed data in chunks called **buckets**. The data is compressed using a delta-encoding method passed to a golomb prefix code. All of the data compression can be seen in the `bucket` package.
+
+When a user makes a query on a bucketized level, buckets absent from the persistent storage scheme are either read from a RAM cache or created on the fly, then all the buckets are decoded concurrently, keeping the query time close to `O(1)`.
