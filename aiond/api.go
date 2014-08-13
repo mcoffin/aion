@@ -59,7 +59,6 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	config.Series = uuid.NewRandom()
-	// TODO: create aion series from config
 	tags := make([]aion.Tag, len(config.Tags))
 	i := 0
 	for t, v := range config.Tags {
