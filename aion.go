@@ -61,12 +61,14 @@ type Level struct {
 
 // Root of the Aion API
 type Aion struct {
+	TagStore TagStore
 	Levels []Level
 }
 
 // Creates a new Aion instance with a given set of levels
-func New(levels []Level) *Aion {
+func New(levels []Level, ts TagStore) *Aion {
 	ret := &Aion{
+		TagStore: ts,
 		Levels: levels,
 	}
 	ret.createHandlers()

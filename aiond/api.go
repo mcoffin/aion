@@ -16,6 +16,49 @@ type Context struct {
 	db *aion.Aion
 }
 
+type createSeriesConfig struct {
+	Series uuid.UUID            `json:"-"`
+	Tags   map[string]string `json:"tags"`
+}
+
+type createSeriesResponse struct {
+	Series string `json:"id"`
+}
+
+func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
+	writeError(res, http.StatusNotImplemented, errors.New("query by tags not implemented"))
+}
+
+func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
+	dec := json.NewDecoder(req.Body)
+	var config createSeriesConfig
+	err := dec.Decode(&config)
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	config.Series = uuid.NewRandom()
+	// TODO: create aion series from config
+	tags := make([]aion.Tag, len(config.Tags))
+	i := 0
+	for t, v := range config.Tags {
+		tags[i] = aion.Tag{
+			Name: t,
+			Value: v,
+		}
+		i++
+	}
+	fmt.Println(tags)
+	err = self.db.TagStore.Tag(config.Series, tags)
+	if err != nil {
+		writeError(res, http.StatusServiceUnavailable, err)
+		return
+	}
+	resStruct := createSeriesResponse{config.Series.String()}
+	data, _ := json.Marshal(resStruct)
+	res.Write(data)
+}
+
 func (self Context) InsertPoint(res http.ResponseWriter, req *http.Request) {
 	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
 	dec := json.NewDecoder(req.Body)

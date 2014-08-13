@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"github.com/FlukeNetworks/aion"
 	"github.com/codegangsta/negroni"
-	"github.com/crowdmob/goamz/aws"
-	"github.com/crowdmob/goamz/dynamodb"
+	"github.com/gocql/gocql"
+	"github.com/google/cayley/graph"
+	_ "github.com/google/cayley/graph/leveldb"
 	"github.com/gorilla/mux"
 	"log"
 	"math"
@@ -76,6 +77,8 @@ func main() {
 	r := router.PathPrefix("/v1").Subrouter()
 	r.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", ctx.InsertPoint).Methods("POST")
 	r.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", ctx.QuerySeries).Methods("GET")
+	r.HandleFunc("/series", ctx.TagQuery).Methods("GET")
+	r.HandleFunc("/series", ctx.CreateSeries).Methods("POST")
 
 	// Setup basic recovery and logging middleware
 	n := negroni.Classic()
@@ -90,31 +93,14 @@ func main() {
 }
 
 func tempCreateAion() (*aion.Aion, error) {
-	auth, err := aws.EnvAuth()
+	cluster := gocql.NewCluster("172.28.128.2")
+	cluster.Keyspace = "timedb"
+	session, err := cluster.CreateSession()
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	server := dynamodb.Server{
-		Auth:   auth,
-		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
-	}
-	pk := dynamodb.PrimaryKey{
-		KeyAttribute: &dynamodb.Attribute{
-			Name: "series",
-			Type: "S",
-		},
-		RangeAttribute: &dynamodb.Attribute{
-			Name: "time",
-			Type: "N",
-		},
-	}
-	tbl := dynamodb.Table{
-		Server: &server,
-		Name:   "timedb",
-		Key:    pk,
-	}
-	cache := aion.DynamoDBCache{
-		Table: &tbl,
+	cache := aion.CQLCache{
+		Session: session,
 	}
 	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	level := aion.Level{
@@ -122,11 +108,6 @@ func tempCreateAion() (*aion.Aion, error) {
 		Store:  &cache,
 	}
 
-	tbl2 := dynamodb.Table{
-		Server: &server,
-		Name:   "timedb-bucket",
-		Key:    pk,
-	}
 	builder := &aion.MemoryBucketBuilder{
 		Duration:   60 * time.Second,
 		Multiplier: math.Pow10(1),
@@ -137,13 +118,21 @@ func tempCreateAion() (*aion.Aion, error) {
 		Granularity: 0,
 		Builder:     builder,
 	}
-	store := aion.NewDynamoDBStore(bs, &tbl2, builder.Multiplier)
+	store := aion.NewCQLStore(bs, session, builder.Multiplier, builder.Duration)
 	filter2 := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	level2 := aion.Level{
 		Filter: filter2,
 		Store:  store,
 	}
 
-	db := aion.New([]aion.Level{level, level2})
+	ts, err := graph.NewTripleStore("leveldb", "/tmp/aion", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tagStore := aion.CayleyTagStore{
+		TripleStore: ts,
+	}
+
+	db := aion.New([]aion.Level{level, level2}, tagStore)
 	return db, nil
 }
