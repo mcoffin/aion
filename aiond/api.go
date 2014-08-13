@@ -26,7 +26,28 @@ type createSeriesResponse struct {
 }
 
 func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
-	writeError(res, http.StatusNotImplemented, errors.New("query by tags not implemented"))
+	params := req.URL.Query()
+	tags := make([]aion.Tag, len(params))
+	i := 0
+	for k, v := range params {
+		tags[i] = aion.Tag{
+			Name: k,
+			Value: v[0],
+		}
+		i++
+	}
+	seriesList, err := self.db.TagStore.Find(tags)
+	if err != nil {
+		writeError(res, http.StatusServiceUnavailable, err)
+	}
+	fmt.Fprint(res, "[")
+	for i, series := range seriesList {
+		fmt.Fprintf(res, "\"%s\"", series.String())
+		if i < len(seriesList) - 1 {
+			fmt.Fprint(res, ",")
+		}
+	}
+	fmt.Fprint(res, "]")
 }
 
 func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
