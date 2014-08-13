@@ -68,6 +68,7 @@ func (self *MemoryBucketBuilder) bucket(series uuid.UUID, t time.Time) (*memoryB
 
 		// Insert data from querier
 		// TODO: should handle errors
+		// TODO: put this data through the filter, not directly in
 		if self.Source != nil {
 			ForAllQuery(series, startTime, startTime.Add(self.Duration), nil, self.Source, func(e Entry) {
 				self.Insert(series, e)
@@ -100,7 +101,6 @@ func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
 	seriesStr := series.String()
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
-		shouldDelete := false
 		tree := self.contexts[seriesStr]
 		bktKey := &memoryBucket{start: t}
 		var item btree.Item
@@ -110,8 +110,9 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 		var bucket *memoryBucket
 		// If we don't have this bucket, then move on down the line
 		if item == nil {
-			shouldDelete = true
 			bucket, _ = self.bucket(series, t)
+			tree = self.contexts[seriesStr]
+			defer tree.Delete(bktKey)
 		} else {
 			bucket = item.(*memoryBucket)
 		}
@@ -129,15 +130,17 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 			entryBackBuf = tmp
 			if n > 0 {
 				for _, e := range entryBackBuf[:n] {
-					entries <- e
+					if e.Timestamp.After(start) {
+						if e.Timestamp.After(end) {
+							return
+						}
+						entries <- e
+					}
 				}
 			}
 			if err != nil {
 				break
 			}
-		}
-		if shouldDelete {
-			tree.Delete(bktKey)
 		}
 	}
 }

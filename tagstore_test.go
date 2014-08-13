@@ -7,7 +7,7 @@ import (
 
 func testTagStore(store TagStore, t *testing.T) {
 	destinationTag := Tag{
-		Name: "destination",
+		Name:  "destination",
 		Value: "google.com",
 	}
 	series := uuid.NewRandom()

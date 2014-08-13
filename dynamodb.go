@@ -24,7 +24,7 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float
 		DynamoDBRepository{
 			Multiplier:  multiplier,
 			Granularity: store.Granularity,
-			Duration: duration,
+			Duration:    duration,
 			Table:       table,
 		},
 	}
@@ -36,7 +36,7 @@ func NewDynamoDBStore(store BucketStore, table *dynamodb.Table, multiplier float
 type DynamoDBRepository struct {
 	Multiplier  float64
 	Granularity time.Duration
-	Duration time.Duration
+	Duration    time.Duration
 	Table       *dynamodb.Table
 }
 

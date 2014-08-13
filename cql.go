@@ -11,7 +11,7 @@ import (
 
 type CQLTagStore struct {
 	ColumnFamily string
-	Session *gocql.Session
+	Session      *gocql.Session
 }
 
 // CQLTagStore implements the TagStore interface
@@ -46,10 +46,10 @@ func NewCQLStore(store BucketStore, session *gocql.Session, multiplier float64, 
 	ret := &CQLStore{
 		store,
 		CQLRepository{
-			Multiplier: multiplier,
+			Multiplier:  multiplier,
 			Granularity: store.Granularity,
-			Duration: duration,
-			Session: session,
+			Duration:    duration,
+			Session:     session,
 		},
 	}
 	ret.Repository = ret.repo
@@ -57,10 +57,10 @@ func NewCQLStore(store BucketStore, session *gocql.Session, multiplier float64, 
 }
 
 type CQLRepository struct {
-	Multiplier float64
+	Multiplier  float64
 	Granularity time.Duration
-	Duration time.Duration
-	Session *gocql.Session
+	Duration    time.Duration
+	Session     *gocql.Session
 }
 
 // CQLRepository implements the BucketRepository interface
@@ -153,7 +153,7 @@ func (self *CQLCache) Query(series uuid.UUID, start, end time.Time, attributes [
 	var t time.Time
 	for iter.Scan(&t, &v) {
 		entries <- Entry{
-			Timestamp: t,
+			Timestamp:  t,
 			Attributes: map[string]float64{"raw": v},
 		}
 	}
