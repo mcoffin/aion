@@ -26,6 +26,22 @@ func (self *RawAggregator) Reset() {
 	self.value = 0
 }
 
+type CountAggregator struct {
+	count int
+}
+
+func (self *CountAggregator) Add(v float64) {
+	self.count++
+}
+
+func (self CountAggregator) Value() float64 {
+	return float64(self.count)
+}
+
+func (self *CountAggregator) Reset() {
+	self.count = 0
+}
+
 func NewAggregator(aggregation string) (Aggregator, error) {
 	var a Aggregator
 	switch aggregation {
@@ -37,6 +53,8 @@ func NewAggregator(aggregation string) (Aggregator, error) {
 		a = new(MaxAggregator)
 	case "avg":
 		a = new(AvgAggregator)
+	case "count":
+		a = new(CountAggregator)
 	default:
 		return nil, fmt.Errorf("Can't find aggregator %s", aggregation)
 	}

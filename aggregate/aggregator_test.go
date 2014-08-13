@@ -6,6 +6,20 @@ import (
 
 var testVals = []float64{1.1, 2.2, -3.1}
 
+func TestCountAggregator(t *testing.T) {
+	a, err := NewAggregator("count")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range testVals {
+		a.Add(v)
+	}
+	realCount := float64(len(testVals))
+	if a.Value() != realCount {
+		t.Errorf("Expected count %v but got %v\n", realCount, a.Value())
+	}
+}
+
 func TestAvgAggregator(t *testing.T) {
 	a, err := NewAggregator("avg")
 	if err != nil {
