@@ -1,9 +1,10 @@
 package aion
 
 import (
+	"time"
+
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/bucket"
-	"time"
 )
 
 const (
@@ -54,7 +55,6 @@ func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attribute
 			errors <- err
 			return
 		}
-		last = last.Add(time.Second)
 	}
 }
 
