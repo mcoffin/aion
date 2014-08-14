@@ -1,9 +1,10 @@
 package aion
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"testing"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
 )
 
 func testLevel(level *Level, t *testing.T, granularity time.Duration, duration time.Duration) {
@@ -37,6 +38,8 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 		level.Store.Query(series, start, end, []string{"raw"}, entryC, errorC)
 	}()
 	queryCount := 0
+
+	sStart := start.Truncate(time.Second)
 loop:
 	for i := 0; true; i++ {
 		select {
@@ -51,6 +54,10 @@ loop:
 			if e.Attributes["raw"] != testData[testDataIndex] {
 				t.Errorf("Value %v at index %d doesn't match %v\n", e.Attributes["raw"], i, testData[testDataIndex])
 			}
+			if !e.Timestamp.Truncate(time.Second).Equal(sStart) {
+				t.Errorf("Time %d at index %d doesn't match %d\n", e.Timestamp.Unix(), i, sStart.Unix())
+			}
+			sStart = sStart.Add(granularity)
 			queryCount++
 		}
 	}
