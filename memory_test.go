@@ -45,11 +45,13 @@ func TestMemoryCacheSourcing(t *testing.T) {
 	}
 	bucketTime := entryTime.Truncate(store.Duration)
 	queryCount := 0
+	var lastEntry Entry
 	ForAllQuery(series, bucketTime, bucketTime.Add(store.Duration), []string{"raw"}, level.Store, func(entry Entry) {
+		lastEntry = entry
 		queryCount++
 	})
 	if queryCount != 2 {
-		t.Errorf("Queried out %d items instead of 2\n", queryCount)
+		t.Errorf("Queried out %d items instead of 2 : %v\n", queryCount, lastEntry)
 	}
 }
 
@@ -76,28 +78,10 @@ func TestMemoryCacheDoubleQuery(t *testing.T) {
 		t.Error(err)
 	}
 	for i := 0; i < 2; i++ {
-		entryC := make(chan Entry)
-		errorC := make(chan error)
-		go func() {
-			defer close(entryC)
-			level.Store.Query(series, entryTime, entryTime, []string{"raw"}, entryC, errorC)
-		}()
-		var queryCount int
-	loop:
-		for queryCount = 0; true; queryCount++ {
-			select {
-			case err := <-errorC:
-				t.Error(err)
-				queryCount--
-			case q, more := <-entryC:
-				if !more {
-					break loop
-				}
-				if q.Attributes["raw"] != e.Attributes["raw"] {
-					t.Errorf("Value %v at doesn't match %v\n", q.Attributes["raw"], e.Attributes["raw"])
-				}
-			}
-		}
+		queryCount := 0
+		err = ForAllQuery(series, entryTime, entryTime, []string{"raw"}, level.Store, func(entry Entry) {
+			queryCount++
+		})
 		if queryCount != 1 {
 			t.Errorf("Test %d yielded %d results instead of 1\n", i, queryCount)
 		}

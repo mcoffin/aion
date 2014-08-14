@@ -99,6 +99,8 @@ func (self *MemoryBucketBuilder) entryReader(series uuid.UUID, start time.Time, 
 }
 
 func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	// Lose the possible millisecond accuracy in the passed time
+	start = start.Truncate(time.Second)
 	seriesStr := series.String()
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
 		tree := self.contexts[seriesStr]
@@ -130,7 +132,7 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 			entryBackBuf = tmp
 			if n > 0 {
 				for _, e := range entryBackBuf[:n] {
-					if e.Timestamp.After(start) {
+					if e.Timestamp.After(start) || e.Timestamp.Equal(start) {
 						if e.Timestamp.After(end) {
 							return
 						}
@@ -149,7 +151,7 @@ func (self *MemoryBucketBuilder) Insert(series uuid.UUID, entry Entry) error {
 	bkt, _ := self.bucket(series, entry.Timestamp)
 	timeEncoder := bkt.context(TimeAttribute).encoder
 	if timeEncoder == nil {
-		timeEncoder = bucket.NewBucketEncoder(entry.Timestamp.Unix(), &bkt.context(TimeAttribute).buffer)
+		timeEncoder = bucket.NewBucketEncoder(self.bucketStartTime(entry.Timestamp).Unix(), &bkt.context(TimeAttribute).buffer)
 		bkt.context(TimeAttribute).encoder = timeEncoder
 	}
 	timeEncoder.WriteInt(entry.Timestamp.Unix())
