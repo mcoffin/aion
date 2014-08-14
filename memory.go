@@ -2,11 +2,12 @@ package aion
 
 import (
 	"bytes"
+	"io"
+	"time"
+
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/bucket"
 	"github.com/google/btree"
-	"io"
-	"time"
 )
 
 type memoryBucketAttribute struct {
@@ -136,7 +137,12 @@ func (self *MemoryBucketBuilder) Query(series uuid.UUID, start, end time.Time, a
 						if e.Timestamp.After(end) {
 							return
 						}
-						entries <- e
+						out := e
+						out.Attributes = map[string]float64{}
+						for k, v := range e.Attributes {
+							out.Attributes[k] = v
+						}
+						entries <- out
 					}
 				}
 			}

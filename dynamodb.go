@@ -2,13 +2,14 @@ package aion
 
 import (
 	"bytes"
-	"code.google.com/p/go-uuid/uuid"
 	"encoding/base64"
 	"fmt"
-	"github.com/FlukeNetworks/aion/bucket"
-	"github.com/crowdmob/goamz/dynamodb"
 	"strconv"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/FlukeNetworks/aion/bucket"
+	"github.com/crowdmob/goamz/dynamodb"
 )
 
 // A DynamoDBStore is a bucket storage implementation using DynamoDB as its backing
@@ -81,6 +82,7 @@ func (self DynamoDBRepository) entryReader(series uuid.UUID, item map[string]*dy
 
 // DynamoDBRepository implements the BucketRepository interface
 func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	start = start.Truncate(time.Second)
 	timeComparison := dynamodb.AttributeComparison{
 		AttributeName:      "time",
 		ComparisonOperator: dynamodb.COMPARISON_BETWEEN,
@@ -125,7 +127,17 @@ func (self DynamoDBRepository) Query(series uuid.UUID, start, end time.Time, att
 			entryBackBuf = tmp
 			if n > 0 {
 				for _, e := range entryBackBuf[:n] {
-					entries <- e
+					if e.Timestamp.After(start) || e.Timestamp.Equal(start) {
+						if e.Timestamp.After(end) {
+							return
+						}
+						out := e
+						out.Attributes = map[string]float64{}
+						for k, v := range e.Attributes {
+							out.Attributes[k] = v
+						}
+						entries <- out
+					}
 				}
 			}
 			if err != nil {

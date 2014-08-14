@@ -2,11 +2,12 @@ package aion
 
 import (
 	"bytes"
-	"code.google.com/p/go-uuid/uuid"
 	"fmt"
+	"time"
+
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/bucket"
 	"github.com/gocql/gocql"
-	"time"
 )
 
 type CQLTagStore struct {
@@ -91,6 +92,7 @@ func (self CQLRepository) entryReader(series uuid.UUID, start time.Time, attribM
 
 // CQLRepository implements the BucketRepository interface
 func (self CQLRepository) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+	start = start.Truncate(time.Second)
 	firstStartTime := start.Truncate(self.Duration)
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
@@ -120,7 +122,17 @@ func (self CQLRepository) Query(series uuid.UUID, start, end time.Time, attribut
 			entryBackBuf = tmp
 			if n > 0 {
 				for _, e := range entryBackBuf[:n] {
-					entries <- e
+					if e.Timestamp.After(start) || e.Timestamp.Equal(start) {
+						if e.Timestamp.After(end) {
+							return
+						}
+						out := e
+						out.Attributes = map[string]float64{}
+						for k, v := range e.Attributes {
+							out.Attributes[k] = v
+						}
+						entries <- out
+					}
 				}
 			}
 			if err != nil {
