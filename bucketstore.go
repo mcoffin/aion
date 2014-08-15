@@ -16,10 +16,9 @@ const (
 )
 
 type BucketStore struct {
-	Granularity, Duration time.Duration
-	Multiplier            float64
-	Source                Querier
-	contexts              map[string]*btree.BTree
+	Duration   time.Duration
+	Multiplier float64
+	contexts   map[string]*btree.BTree
 }
 
 type memoryBucketAttribute struct {
@@ -51,7 +50,7 @@ func (self memoryBucket) verifyContexts(entry Entry) {
 		timeAttribute = newMemoryBucketAttribute(self.start.Unix())
 		self.contexts[TimeAttribute] = timeAttribute
 	}
-	for k, v := range entry.Attributes {
+	for k, _ := range entry.Attributes {
 		a := self.contexts[k]
 		if a == nil {
 			a = newMemoryBucketAttribute(0)
@@ -64,6 +63,14 @@ func (self memoryBucket) verifyContexts(entry Entry) {
 func (a memoryBucket) Less(b btree.Item) bool {
 	other := b.(memoryBucket)
 	return a.start.Before(other.start)
+}
+
+func NewBucketStore(duration time.Duration, multiplier float64) *BucketStore {
+	return &BucketStore{
+		Duration:   duration,
+		Multiplier: multiplier,
+		contexts:   map[string]*btree.BTree{},
+	}
 }
 
 func (self BucketStore) bucketStartTime(t time.Time) time.Time {
@@ -103,8 +110,8 @@ func (self *BucketStore) getOrCreateBucket(series uuid.UUID, entry Entry) memory
 
 // BucketStore implements the SeriesStore interface
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
-	bkt := self.getOrCeateBucket(series, entry)
-	bkt.writeEntry(entry)
+	bkt := self.getOrCreateBucket(series, entry)
+	bkt.writeEntry(entry, self.Multiplier)
 	return nil
 }
 
@@ -116,15 +123,14 @@ func (self *BucketStore) entryReader(series uuid.UUID, bkt memoryBucket, attribu
 	}
 	bkt.contexts[TimeAttribute].enc.Close()
 	decs := map[string]*bucket.BucketDecoder{
-		TimeAttribute: bucket.NewBucketDecoder(bkt.start, bytes.NewBuffer(bkt.contexts[TimeAttribute].buffer.Bytes())),
+		TimeAttribute: bucket.NewBucketDecoder(bkt.start.Unix(), bytes.NewBuffer(bkt.contexts[TimeAttribute].buffer.Bytes())),
 	}
 	for _, a := range attributes {
 		bkt.contexts[a].enc.Close()
 		buf := bytes.NewBuffer(bkt.contexts[a].buffer.Bytes())
 		decs[a] = bucket.NewBucketDecoder(0, buf)
 	}
-	// TODO: create a bucketEntryReader for list of BucketDecoders
-	return nil
+	return bucketEntryReader(series, self.Multiplier, decs, attributes)
 }
 
 // Convenience function for creating an EntryReader from a set of BucketDecoders and their surrounding context
@@ -155,10 +161,14 @@ func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attribute
 	start = start.Truncate(time.Second)
 	// Loop through all buckets that we could possibly have
 	for t := self.bucketStartTime(start); t.Before(end); t = t.Add(self.Duration) {
-		bkt := self.getOrCreateBucket(Entry{Timestamp: t})
+		bkt := self.getOrCreateBucket(series, Entry{Timestamp: t})
 		entryBuf := make([]Entry, 1)
+		for i, _ := range entryBuf {
+			entryBuf[i].Attributes = map[string]float64{}
+		}
+		reader := self.entryReader(series, bkt, attributes)
 		for {
-			n, err := self.entryReader(series, bkt, attributes)
+			n, err := reader.ReadEntries(entryBuf)
 			if n > 0 {
 				for _, e := range entryBuf[:n] {
 					if e.Timestamp.After(start) || e.Timestamp.Equal(start) {
