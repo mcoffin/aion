@@ -15,9 +15,24 @@ const (
 	TimeAttribute = "times"
 )
 
+// An EncodedAttribute represents a series of encoded numbers
+// for example, all of the "avg" numbers in a given bucket
+type EncodedBucketAttribute struct {
+	Name string
+	Data []byte
+}
+
+// A BucketRepository represents a persistent store for buckets (probably on disc somewhere)
+type BucketRepository interface {
+	Get(series uuid.UUID, duration time.Duration, start time.Time, attributes []string) ([]EncodedBucketAttribute, error)
+	Put(series uuid.UUID, duration time.Duration, start time.Time, attributes []EncodedBucketAttribute) error
+}
+
 type BucketStore struct {
 	Duration   time.Duration
 	Multiplier float64
+	Source     Querier
+	Repository BucketRepository
 	contexts   map[string]*btree.BTree
 }
 
@@ -41,6 +56,23 @@ func (self memoryBucket) writeEntry(entry Entry, multiplier float64) {
 	self.contexts[TimeAttribute].enc.WriteInt(entry.Timestamp.Unix())
 	for k, v := range entry.Attributes {
 		self.contexts[k].enc.WriteInt(int64(v * multiplier))
+	}
+}
+
+func (self memoryBucket) populate(attribs []EncodedBucketAttribute) {
+	for _, a := range attribs {
+		buf := bytes.NewBuffer(a.Data)
+		mAttrib := &memoryBucketAttribute{
+			buffer: *buf,
+		}
+		var baseline int64
+		switch a.Name {
+		case TimeAttribute:
+			baseline = self.start.Unix()
+		default:
+			baseline = 0
+		}
+		mAttrib.enc = bucket.NewBucketEncoder(baseline, &mAttrib.buffer)
 	}
 }
 
@@ -86,6 +118,19 @@ func (self *BucketStore) getOrCreateTree(series uuid.UUID) *btree.BTree {
 	return tree
 }
 
+func (self *BucketStore) populateBucket(series uuid.UUID, bkt memoryBucket) error {
+	// First, try to query the bucket out of the repository
+	if self.Repository != nil {
+		attribData, err := self.Repository.Get(series, self.Duration, bkt.start, nil)
+		if err != nil {
+			return err
+		}
+		bkt.populate(attribData)
+	}
+	// TODO: if bucket wasn't queried out of repo, query from source
+	return nil
+}
+
 func (self *BucketStore) getOrCreateBucket(series uuid.UUID, entry Entry) memoryBucket {
 	var bkt memoryBucket
 	keyTime := entry.Timestamp
@@ -98,7 +143,10 @@ func (self *BucketStore) getOrCreateBucket(series uuid.UUID, entry Entry) memory
 			contexts: map[string]*memoryBucketAttribute{},
 		}
 		tree.ReplaceOrInsert(bkt)
-		// TODO: load bucket from source and/or self's persistent cache
+		err := self.populateBucket(series, bkt)
+		if err != nil {
+			panic(err) // TODO: actually handle this in a real manner
+		}
 	} else {
 		bkt = item.(memoryBucket)
 	}
