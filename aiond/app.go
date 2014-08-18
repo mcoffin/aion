@@ -4,17 +4,21 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/FlukeNetworks/aion"
-	"github.com/codegangsta/negroni"
-	"github.com/gocql/gocql"
-	"github.com/google/cayley/graph"
-	_ "github.com/google/cayley/graph/leveldb"
-	"github.com/gorilla/mux"
 	"log"
 	"math"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/FlukeNetworks/aion"
+	"github.com/FlukeNetworks/aion/cayley"
+	aiondynamodb "github.com/FlukeNetworks/aion/dynamodb"
+	"github.com/codegangsta/negroni"
+	"github.com/crowdmob/goamz/aws"
+	"github.com/crowdmob/goamz/dynamodb"
+	"github.com/google/cayley/graph"
+	_ "github.com/google/cayley/graph/leveldb"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -93,46 +97,66 @@ func main() {
 }
 
 func tempCreateAion() (*aion.Aion, error) {
-	cluster := gocql.NewCluster("172.28.128.2")
-	cluster.Keyspace = "timedb"
-	session, err := cluster.CreateSession()
-	if err != nil {
-		log.Fatal(err)
-	}
-	cache := aion.CQLCache{
-		Session: session,
-	}
-	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
-	level := aion.Level{
-		Filter: filter,
-		Store:  &cache,
-	}
-
-	builder := &aion.MemoryBucketBuilder{
-		Duration:   60 * time.Second,
-		Multiplier: math.Pow10(1),
-		Source:     &cache,
-	}
-	builder.Init()
-	bs := aion.BucketStore{
-		Granularity: 0,
-		Builder:     builder,
-	}
-	store := aion.NewCQLStore(bs, session, builder.Multiplier, builder.Duration)
-	filter2 := aion.NewAggregateFilter(0, []string{"raw"}, nil)
-	level2 := aion.Level{
-		Filter: filter2,
-		Store:  store,
-	}
-
+	// Create Cayley TagStore
 	ts, err := graph.NewTripleStore("leveldb", "/tmp/aion", nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	tagStore := aion.CayleyTagStore{
+	tagStore := cayley.TagStore{
 		TripleStore: ts,
 	}
 
-	db := aion.New([]aion.Level{level, level2}, tagStore)
+	// Create generic dynamodb stuff
+	auth, err := aws.EnvAuth()
+	if err != nil {
+		return nil, err
+	}
+	server := &dynamodb.Server{
+		Auth:   auth,
+		Region: aws.Region{Name: "us-west-1", DynamoDBEndpoint: "http://localhost:8000"},
+	}
+
+	// Create level 0 = cache
+	pk := dynamodb.PrimaryKey{
+		KeyAttribute: &dynamodb.Attribute{
+			Name: "series",
+			Type: dynamodb.TYPE_STRING,
+		},
+		RangeAttribute: &dynamodb.Attribute{
+			Name: "time",
+			Type: dynamodb.TYPE_NUMBER,
+		},
+	}
+	tbl := dynamodb.Table{
+		Server: server,
+		Name:   "timedb",
+		Key:    pk,
+	}
+	cache := aiondynamodb.Cache{
+		Table: &tbl,
+	}
+	level0 := aion.Level{
+		Filter: aion.NewAggregateFilter(0, []string{"raw"}, nil),
+		Store:  cache,
+	}
+
+	// Create level1 = bucket store
+	tbl2 := dynamodb.Table{
+		Server: server,
+		Name:   "timedb-bucket",
+		Key:    pk,
+	}
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
+	repo := aiondynamodb.Repository{
+		Table: &tbl2,
+	}
+	store.Repository = repo
+	level1 := aion.Level{
+		Filter: aion.NewAggregateFilter(0, []string{"raw"}, nil),
+		Store:  store,
+	}
+
+	// Create aion instance
+	db := aion.New([]aion.Level{level0, level1}, tagStore)
 	return db, nil
 }
