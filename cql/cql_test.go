@@ -1,6 +1,7 @@
 package cql_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -32,4 +33,23 @@ func TestCQLCache(t *testing.T) {
 		Store:  &cache,
 	}
 	aiontest.TestLevel(&level, t, time.Second, 60*time.Second)
+}
+
+func TestCQLStore(t *testing.T) {
+	session, err := newCQLTestSession()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
+	repo := cql.CQLRepository{
+		ColumnFamily: "buckets",
+		Session:      session,
+	}
+	store.Repository = repo
+	level := aion.Level{
+		Filter: aion.NewAggregateFilter(0, []string{"raw"}, nil),
+		Store:  store,
+	}
+	aiontest.TestLevel(&level, t, time.Second, store.Duration)
 }
