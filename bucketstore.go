@@ -186,6 +186,10 @@ func (self *BucketStore) entryReader(series uuid.UUID, bkt memoryBucket, attribu
 		TimeAttribute: bucket.NewBucketDecoder(bkt.start.Unix(), bytes.NewBuffer(bkt.contexts[TimeAttribute].buffer.Bytes())),
 	}
 	for _, a := range attributes {
+		// If we don't have this attribute, ignore it
+		if bkt.contexts[a] == nil {
+			continue
+		}
 		bkt.contexts[a].enc.Close()
 		buf := bytes.NewBuffer(bkt.contexts[a].buffer.Bytes())
 		decs[a] = bucket.NewBucketDecoder(0, buf)

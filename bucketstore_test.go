@@ -17,6 +17,28 @@ func (self fakeQueryFunc) Query(series uuid.UUID, start, end time.Time, attribut
 	self(start, end, entries)
 }
 
+func TestBucketStoreEmptyQuery(t *testing.T) {
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
+	level := aion.Level{
+		Filter: filter,
+		Store:  store,
+	}
+	level.Filter.SetHandler(level.Store.Insert)
+
+	queryCount := 0
+	startTime := time.Now()
+	err := aion.ForAllQuery(uuid.NewRandom(), startTime, startTime, []string{"raw"}, level.Store, func(entry aion.Entry) {
+		queryCount++
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if queryCount != 0 {
+		t.Errorf("Test yielded %d results instead of 0\n", queryCount)
+	}
+}
+
 func TestBucketStoreMultiQuery(t *testing.T) {
 	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
 	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
