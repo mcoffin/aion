@@ -39,8 +39,8 @@ func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start ti
 	if err != nil {
 		return nil, err
 	}
-	queryStr := fmt.Sprintf("SELECT attribs FROM %d WHERE series = ? and time = ?", self.ColumnFamily)
-	iter := self.Session.Query(queryStr, seriesUUID, start).Iter()
+	queryStr := fmt.Sprintf("SELECT attribs FROM %d WHERE series = ? and duration = ? and time = ?", self.ColumnFamily)
+	iter := self.Session.Query(queryStr, seriesUUID, int64(duration.Seconds()), start).Iter()
 	var attribs cqlAttribsMap
 	for iter.Scan(&attribs) {
 		return attribs.encodedAttributes(), iter.Close()
@@ -58,8 +58,8 @@ func (self CQLRepository) Put(series uuid.UUID, duration time.Duration, start ti
 	for _, encodedAttribute := range attributes {
 		attribMap[encodedAttribute.Name] = encodedAttribute.Data
 	}
-	queryStr := fmt.Sprintf("INSERT INTO %s (series, time, attribs) VALUES (?, ?, ?)", self.ColumnFamily)
-	return self.Session.Query(queryStr, seriesUUID, start, attribMap).Exec()
+	queryStr := fmt.Sprintf("INSERT INTO %s (series, duration, time, attribs) VALUES (?, ?, ?, ?)", self.ColumnFamily)
+	return self.Session.Query(queryStr, seriesUUID, int64(duration.Seconds()), start, attribMap).Exec()
 }
 
 // Represents a Cassandra cache
