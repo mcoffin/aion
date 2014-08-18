@@ -1,9 +1,12 @@
-package aion
+package aion_test
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"testing"
 	"time"
+
+	"github.com/FlukeNetworks/aion"
+
+	"code.google.com/p/go-uuid/uuid"
 )
 
 var testData = []float64{79.1, 80.0, 78.2, 43.1, 90.7, 90.7, 77.7}
@@ -13,14 +16,14 @@ const (
 )
 
 func TestCacheFilter(t *testing.T) {
-	filter := NewAggregateFilter(0, []string{"raw"}, nil)
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	testFilter(filter, t)
 }
 
-func testFilter(f Filter, t *testing.T) {
+func testFilter(f aion.Filter, t *testing.T) {
 	seriesUUID := uuid.NewRandom()
 	checkIndex := 0
-	f.SetHandler(func(series uuid.UUID, entry Entry) error {
+	f.SetHandler(func(series uuid.UUID, entry aion.Entry) error {
 		val := entry.Attributes["raw"]
 		if val != testData[checkIndex] {
 			t.Errorf("%v at index %d != %v\n", val, checkIndex, testData[checkIndex])
@@ -30,7 +33,7 @@ func testFilter(f Filter, t *testing.T) {
 	})
 	current := time.Now()
 	for _, v := range testData {
-		e := Entry{
+		e := aion.Entry{
 			Timestamp:  current,
 			Attributes: map[string]float64{"raw": v},
 		}

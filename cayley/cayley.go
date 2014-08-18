@@ -1,14 +1,16 @@
-package aion
+package cayley
 
 import (
 	"bytes"
-	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/FlukeNetworks/aion"
 	"github.com/google/cayley/graph"
 	"github.com/google/cayley/quad"
 	"github.com/google/cayley/query/gremlin"
-	"time"
 )
 
 type CayleyTagStore struct {
@@ -20,7 +22,7 @@ func (self CayleyTagStore) createSession() *gremlin.Session {
 	return gremlin.NewSession(self.TripleStore, 60*time.Second, true)
 }
 
-func (self CayleyTagStore) Tag(series uuid.UUID, tags []Tag) error {
+func (self CayleyTagStore) Tag(series uuid.UUID, tags []aion.Tag) error {
 	triples := make([]quad.Quad, len(tags))
 	for i, t := range tags {
 		triples[i] = quad.Quad{
@@ -33,7 +35,7 @@ func (self CayleyTagStore) Tag(series uuid.UUID, tags []Tag) error {
 	return nil
 }
 
-func (self CayleyTagStore) Find(tags []Tag) ([]uuid.UUID, error) {
+func (self CayleyTagStore) Find(tags []aion.Tag) ([]uuid.UUID, error) {
 	session := self.createSession()
 	tagsJson, err := json.Marshal(tags)
 	if err != nil {

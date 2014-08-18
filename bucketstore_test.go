@@ -1,29 +1,31 @@
-package aion
+package aion_test
 
 import (
 	"math"
 	"testing"
 	"time"
 
+	"github.com/FlukeNetworks/aion"
+
 	"code.google.com/p/go-uuid/uuid"
 )
 
-type fakeQueryFunc func(start, end time.Time, entries chan Entry)
+type fakeQueryFunc func(start, end time.Time, entries chan aion.Entry)
 
-func (self fakeQueryFunc) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+func (self fakeQueryFunc) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan aion.Entry, errors chan error) {
 	self(start, end, entries)
 }
 
 func TestBucketStoreMultiQuery(t *testing.T) {
-	store := NewBucketStore(60*time.Second, math.Pow10(1))
-	filter := NewAggregateFilter(0, []string{"raw"}, nil)
-	level := Level{
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
+	level := aion.Level{
 		Filter: filter,
 		Store:  store,
 	}
 	level.Filter.SetHandler(level.Store.Insert)
 	entryTime := time.Now()
-	ent := Entry{
+	ent := aion.Entry{
 		Timestamp:  entryTime,
 		Attributes: map[string]float64{"raw": 79.1},
 	}
@@ -34,7 +36,7 @@ func TestBucketStoreMultiQuery(t *testing.T) {
 	}
 	for i := 0; i < 2; i++ {
 		queryCount := 0
-		err = ForAllQuery(series, entryTime, entryTime, []string{"raw"}, level.Store, func(entry Entry) {
+		err = aion.ForAllQuery(series, entryTime, entryTime, []string{"raw"}, level.Store, func(entry aion.Entry) {
 			queryCount++
 		})
 		if err != nil {
@@ -47,24 +49,24 @@ func TestBucketStoreMultiQuery(t *testing.T) {
 }
 
 func TestBucketStoreSourcing(t *testing.T) {
-	source := fakeQueryFunc(func(start, end time.Time, entries chan Entry) {
-		e := Entry{
+	source := fakeQueryFunc(func(start, end time.Time, entries chan aion.Entry) {
+		e := aion.Entry{
 			Timestamp:  start,
 			Attributes: map[string]float64{"raw": 66.6},
 		}
 		entries <- e
 	})
-	store := NewBucketStore(60*time.Second, math.Pow10(1))
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
 	store.Source = source
-	filter := NewAggregateFilter(0, []string{"raw"}, nil)
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
 	store.Filter = filter
-	level := Level{
+	level := aion.Level{
 		Filter: filter,
 		Store:  store,
 	}
 	level.Filter.SetHandler(level.Store.Insert)
 	entryTime := time.Now()
-	ent := Entry{
+	ent := aion.Entry{
 		Timestamp:  entryTime,
 		Attributes: map[string]float64{"raw": 79.1},
 	}
@@ -75,7 +77,7 @@ func TestBucketStoreSourcing(t *testing.T) {
 	}
 	bucketTime := entryTime.Truncate(store.Duration)
 	queryCount := 0
-	err = ForAllQuery(series, bucketTime, bucketTime.Add(store.Duration), []string{"raw"}, level.Store, func(entry Entry) {
+	err = aion.ForAllQuery(series, bucketTime, bucketTime.Add(store.Duration), []string{"raw"}, level.Store, func(entry aion.Entry) {
 		queryCount++
 	})
 	if err != nil {
@@ -87,9 +89,9 @@ func TestBucketStoreSourcing(t *testing.T) {
 }
 
 func TestBucketStore(t *testing.T) {
-	store := NewBucketStore(60*time.Second, math.Pow10(1))
-	filter := NewAggregateFilter(0, []string{"raw"}, nil)
-	level := Level{
+	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
+	level := aion.Level{
 		Filter: filter,
 		Store:  store,
 	}

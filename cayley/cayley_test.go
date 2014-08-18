@@ -1,9 +1,11 @@
-package aion
+package cayley_test
 
 import (
+	"testing"
+
+	"github.com/FlukeNetworks/aion/cayley"
 	"github.com/google/cayley/graph"
 	_ "github.com/google/cayley/graph/memstore"
-	"testing"
 )
 
 func TestCayleyTagStore(t *testing.T) {
@@ -11,7 +13,7 @@ func TestCayleyTagStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := CayleyTagStore{
+	store := cayley.CayleyTagStore{
 		TripleStore: ts,
 	}
 	testTagStore(store, t)

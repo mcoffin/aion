@@ -1,19 +1,22 @@
-package aion
+package aion_test
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"testing"
+
+	"github.com/FlukeNetworks/aion"
+
+	"code.google.com/p/go-uuid/uuid"
 )
 
-func testTagStore(store TagStore, t *testing.T) {
-	destinationTag := Tag{
+func testTagStore(store aion.TagStore, t *testing.T) {
+	destinationTag := aion.Tag{
 		Name:  "destination",
 		Value: "google.com",
 	}
 	series := uuid.NewRandom()
-	testTags := []Tag{destinationTag, Tag{"source", "probe0"}}
+	testTags := []aion.Tag{destinationTag, aion.Tag{"source", "probe0"}}
 	series2 := uuid.NewRandom()
-	testTags2 := []Tag{destinationTag, Tag{"source", "probe1"}}
+	testTags2 := []aion.Tag{destinationTag, aion.Tag{"source", "probe1"}}
 	err := store.Tag(series, testTags)
 	if err != nil {
 		t.Fatal(err)
@@ -22,7 +25,7 @@ func testTagStore(store TagStore, t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := store.Find([]Tag{destinationTag})
+	res, err := store.Find([]aion.Tag{destinationTag})
 	if err != nil {
 		t.Fatal(err)
 	}

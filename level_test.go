@@ -1,13 +1,15 @@
-package aion
+package aion_test
 
 import (
 	"testing"
 	"time"
 
+	"github.com/FlukeNetworks/aion"
+
 	"code.google.com/p/go-uuid/uuid"
 )
 
-func testLevel(level *Level, t *testing.T, granularity time.Duration, duration time.Duration) {
+func testLevel(level *aion.Level, t *testing.T, granularity time.Duration, duration time.Duration) {
 	series := uuid.NewRandom()
 	level.Filter.SetHandler(level.Store.Insert)
 	start := time.Now()
@@ -16,7 +18,7 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 	insertCount := 0
 	for !current.After(end) {
 		for _, v := range testData {
-			e := Entry{
+			e := aion.Entry{
 				Timestamp:  current,
 				Attributes: map[string]float64{"raw": v},
 			}
@@ -31,7 +33,7 @@ func testLevel(level *Level, t *testing.T, granularity time.Duration, duration t
 			}
 		}
 	}
-	entryC := make(chan Entry)
+	entryC := make(chan aion.Entry)
 	errorC := make(chan error)
 	go func() {
 		defer close(entryC)
