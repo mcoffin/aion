@@ -1,4 +1,4 @@
-package aion_test
+package aiontest
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 )
 
-func testTagStore(store aion.TagStore, t *testing.T) {
+func TestTagStore(store aion.TagStore, t *testing.T) {
 	destinationTag := aion.Tag{
 		Name:  "destination",
 		Value: "google.com",

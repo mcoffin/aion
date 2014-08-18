@@ -1,9 +1,12 @@
-package aion
+package cql_test
 
 import (
 	"testing"
 	"time"
 
+	"github.com/FlukeNetworks/aion"
+	"github.com/FlukeNetworks/aion/aiontest"
+	"github.com/FlukeNetworks/aion/cql"
 	"github.com/gocql/gocql"
 )
 
@@ -19,14 +22,14 @@ func TestCQLCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer session.Close()
-	cache := CQLCache{
+	cache := cql.CQLCache{
 		ColumnFamily: "cache",
 		Session:      session,
 	}
-	filter := NewAggregateFilter(0, []string{"raw"}, nil)
-	level := Level{
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
+	level := aion.Level{
 		Filter: filter,
 		Store:  &cache,
 	}
-	testLevel(&level, t, time.Second, 60*time.Second)
+	aiontest.TestLevel(&level, t, time.Second, 60*time.Second)
 }

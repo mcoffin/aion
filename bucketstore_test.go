@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/FlukeNetworks/aion"
+	"github.com/FlukeNetworks/aion/aiontest"
 
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -95,5 +96,5 @@ func TestBucketStore(t *testing.T) {
 		Filter: filter,
 		Store:  store,
 	}
-	testLevel(&level, t, time.Second, store.Duration)
+	aiontest.TestLevel(&level, t, time.Second, store.Duration)
 }

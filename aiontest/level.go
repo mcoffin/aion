@@ -1,4 +1,4 @@
-package aion_test
+package aiontest
 
 import (
 	"testing"
@@ -9,7 +9,9 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 )
 
-func testLevel(level *aion.Level, t *testing.T, granularity time.Duration, duration time.Duration) {
+var testData = []float64{79.1, 80.0, 78.2, 43.1, 90.7, 90.7, 77.7}
+
+func TestLevel(level *aion.Level, t *testing.T, granularity time.Duration, duration time.Duration) {
 	series := uuid.NewRandom()
 	level.Filter.SetHandler(level.Store.Insert)
 	start := time.Now()

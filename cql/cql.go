@@ -1,4 +1,4 @@
-package aion
+package cql
 
 import (
 	"errors"
@@ -6,18 +6,19 @@ import (
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
+	"github.com/FlukeNetworks/aion"
 	"github.com/gocql/gocql"
 )
 
 // Private type marshalled out by gocql
 type cqlAttribsMap map[string][]byte
 
-// Converts this map into the EncodedBucketAttribute array expected by the rest of Aion
-func (self cqlAttribsMap) encodedAttributes() []EncodedBucketAttribute {
-	ret := make([]EncodedBucketAttribute, len(self))
+// Converts this map into the aion.EncodedBucketAttribute array expected by the rest of Aion
+func (self cqlAttribsMap) encodedAttributes() []aion.EncodedBucketAttribute {
+	ret := make([]aion.EncodedBucketAttribute, len(self))
 	i := 0
 	for name, data := range self {
-		ret[i] = EncodedBucketAttribute{
+		ret[i] = aion.EncodedBucketAttribute{
 			Name: name,
 			Data: data,
 		}
@@ -33,7 +34,7 @@ type CQLRepository struct {
 }
 
 // CQLRepository implements the BucketRepository interface
-func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start time.Time, attributes []string) ([]EncodedBucketAttribute, error) {
+func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start time.Time, attributes []string) ([]aion.EncodedBucketAttribute, error) {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start ti
 }
 
 // CQLRepository implements the BucketRepository interface
-func (self CQLRepository) Put(series uuid.UUID, duration time.Duration, start time.Time, attributes []EncodedBucketAttribute) error {
+func (self CQLRepository) Put(series uuid.UUID, duration time.Duration, start time.Time, attributes []aion.EncodedBucketAttribute) error {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ type CQLCache struct {
 }
 
 // CQLCache implements the SeriesStore interface
-func (self CQLCache) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan Entry, errors chan error) {
+func (self CQLCache) Query(series uuid.UUID, start, end time.Time, attributes []string, entries chan aion.Entry, errors chan error) {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		errors <- err
@@ -80,7 +81,7 @@ func (self CQLCache) Query(series uuid.UUID, start, end time.Time, attributes []
 	var v float64
 	var t time.Time
 	for iter.Scan(&t, &v) {
-		entries <- Entry{
+		entries <- aion.Entry{
 			Timestamp:  t,
 			Attributes: map[string]float64{"raw": v},
 		}
@@ -92,7 +93,7 @@ func (self CQLCache) Query(series uuid.UUID, start, end time.Time, attributes []
 }
 
 // CQLCache implements the SeriesStore interface
-func (self CQLCache) Insert(series uuid.UUID, entry Entry) error {
+func (self CQLCache) Insert(series uuid.UUID, entry aion.Entry) error {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		return err
