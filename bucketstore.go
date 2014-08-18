@@ -133,7 +133,7 @@ func (self *BucketStore) populateBucket(series uuid.UUID, bkt memoryBucket) erro
 		gotBucket := false
 		err := ForAllQuery(series, bkt.start, bkt.start.Add(self.Duration), nil, self.Source, func(e Entry) {
 			gotBucket = true
-			self.Filter.Insert(series, e) // TODO: handle that err doe
+			self.Filter.Insert(series, e) // TODO: handle dat err doe
 		})
 		if gotBucket {
 			return err
@@ -185,6 +185,7 @@ func (self *BucketStore) entryReader(series uuid.UUID, bkt memoryBucket, attribu
 	decs := map[string]*bucket.BucketDecoder{
 		TimeAttribute: bucket.NewBucketDecoder(bkt.start.Unix(), bytes.NewBuffer(bkt.contexts[TimeAttribute].buffer.Bytes())),
 	}
+	// TODO: if attributes = nil
 	for _, a := range attributes {
 		// If we don't have this attribute, ignore it
 		if bkt.contexts[a] == nil {
@@ -199,6 +200,7 @@ func (self *BucketStore) entryReader(series uuid.UUID, bkt memoryBucket, attribu
 
 // Convenience function for creating an EntryReader from a set of BucketDecoders and their surrounding context
 func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bucket.BucketDecoder, attributes []string) EntryReader {
+	mult := 1 / multiplier
 	ret := func(entries []Entry) (int, error) {
 		iBuf := make([]int64, len(entries))
 		n, err := decs[TimeAttribute].Read(iBuf)
@@ -207,7 +209,6 @@ func bucketEntryReader(series uuid.UUID, multiplier float64, decs map[string]*bu
 			for i, v := range iBuf {
 				entries[i].Timestamp = time.Unix(v, 0)
 			}
-			mult := 1 / multiplier
 			for _, a := range attributes {
 				decs[a].Read(iBuf)
 				for i, v := range iBuf {
@@ -249,7 +250,7 @@ func (self *BucketStore) Query(series uuid.UUID, start, end time.Time, attribute
 				}
 			}
 			if err != nil {
-				break
+				break // TODO: Handle if not EOF
 			}
 		}
 	}

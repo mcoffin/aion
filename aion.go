@@ -1,8 +1,9 @@
 package aion
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
 )
 
 // Generalization for something that can read entries in to a buffer

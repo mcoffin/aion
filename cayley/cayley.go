@@ -31,7 +31,7 @@ func (self TagStore) Tag(series uuid.UUID, tags []aion.Tag) error {
 			Object:    t.Value,
 		}
 	}
-	self.TripleStore.AddTripleSet(triples)
+	self.TripleStore.AddTripleSet(triples) // TODO: Error handling? lol
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (self TagStore) Find(tags []aion.Tag) ([]uuid.UUID, error) {
 	ret := []uuid.UUID{}
 	for _, item := range genRes {
 		m := item.(map[string]string)
-		ret = append(ret, uuid.Parse(m["id"]))
+		ret = append(ret, uuid.Parse(m["id"])) // TODO: Allocate in one step? Use steps from BuildJson iteration
 	}
 	return ret, nil
 }
