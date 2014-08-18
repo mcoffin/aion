@@ -9,12 +9,12 @@ import (
 	_ "github.com/google/cayley/graph/memstore"
 )
 
-func TestCayleyTagStore(t *testing.T) {
+func TestTagStore(t *testing.T) {
 	ts, err := graph.NewTripleStore("memstore", "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := cayley.CayleyTagStore{
+	store := cayley.TagStore{
 		TripleStore: ts,
 	}
 	aiontest.TestTagStore(store, t)

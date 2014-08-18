@@ -13,16 +13,16 @@ import (
 	"github.com/google/cayley/query/gremlin"
 )
 
-type CayleyTagStore struct {
+type TagStore struct {
 	TripleStore graph.TripleStore
 }
 
-func (self CayleyTagStore) createSession() *gremlin.Session {
+func (self TagStore) createSession() *gremlin.Session {
 	// TODO: come up with a sensible timeout
 	return gremlin.NewSession(self.TripleStore, 60*time.Second, true)
 }
 
-func (self CayleyTagStore) Tag(series uuid.UUID, tags []aion.Tag) error {
+func (self TagStore) Tag(series uuid.UUID, tags []aion.Tag) error {
 	triples := make([]quad.Quad, len(tags))
 	for i, t := range tags {
 		triples[i] = quad.Quad{
@@ -35,7 +35,7 @@ func (self CayleyTagStore) Tag(series uuid.UUID, tags []aion.Tag) error {
 	return nil
 }
 
-func (self CayleyTagStore) Find(tags []aion.Tag) ([]uuid.UUID, error) {
+func (self TagStore) Find(tags []aion.Tag) ([]uuid.UUID, error) {
 	session := self.createSession()
 	tagsJson, err := json.Marshal(tags)
 	if err != nil {

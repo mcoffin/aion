@@ -42,7 +42,7 @@ func TestCQLStore(t *testing.T) {
 	}
 	defer session.Close()
 	store := aion.NewBucketStore(60*time.Second, math.Pow10(1))
-	repo := cql.CQLRepository{
+	repo := cql.Repository{
 		ColumnFamily: "buckets",
 		Session:      session,
 	}

@@ -27,14 +27,14 @@ func (self cqlAttribsMap) encodedAttributes() []aion.EncodedBucketAttribute {
 	return ret
 }
 
-// A CQLRepository stores bucket data in a CQL capable database
-type CQLRepository struct {
+// A Repository stores bucket data in a CQL capable database
+type Repository struct {
 	ColumnFamily string
 	Session      *gocql.Session
 }
 
-// CQLRepository implements the BucketRepository interface
-func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start time.Time, attributes []string) ([]aion.EncodedBucketAttribute, error) {
+// Repository implements the BucketRepository interface
+func (self Repository) Get(series uuid.UUID, duration time.Duration, start time.Time, attributes []string) ([]aion.EncodedBucketAttribute, error) {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		return nil, err
@@ -48,8 +48,8 @@ func (self CQLRepository) Get(series uuid.UUID, duration time.Duration, start ti
 	return nil, errors.New("cql: bucket not found")
 }
 
-// CQLRepository implements the BucketRepository interface
-func (self CQLRepository) Put(series uuid.UUID, duration time.Duration, start time.Time, attributes []aion.EncodedBucketAttribute) error {
+// Repository implements the BucketRepository interface
+func (self Repository) Put(series uuid.UUID, duration time.Duration, start time.Time, attributes []aion.EncodedBucketAttribute) error {
 	seriesUUID, err := gocql.UUIDFromBytes(series)
 	if err != nil {
 		return err
