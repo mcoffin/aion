@@ -24,6 +24,36 @@ func createDynamoDBTestServer() (*dynamodb.Server, error) {
 	return &server, nil
 }
 
+func TestDynamoDBCache(t *testing.T) {
+	server, err := createDynamoDBTestServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pk := dynamodb.PrimaryKey{
+		KeyAttribute: &dynamodb.Attribute{
+			Name: "series",
+			Type: dynamodb.TYPE_STRING,
+		},
+		RangeAttribute: &dynamodb.Attribute{
+			Name: "time",
+			Type: dynamodb.TYPE_NUMBER,
+		},
+	}
+	tbl := dynamodb.Table{
+		Server: server,
+		Name:   "timedb",
+		Key:    pk,
+	}
+	cache := aiondynamodb.Cache{
+		Table: &tbl,
+	}
+	level := aion.Level{
+		Filter: aion.NewAggregateFilter(0, []string{"raw"}, nil),
+		Store:  cache,
+	}
+	aiontest.TestLevel(&level, t, time.Second, 60*time.Second)
+}
+
 func TestDynamoDBStore(t *testing.T) {
 	server, err := createDynamoDBTestServer()
 	if err != nil {
