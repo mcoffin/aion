@@ -47,15 +47,17 @@ func TestBucketStoreMultiQuery(t *testing.T) {
 }
 
 func TestBucketStoreSourcing(t *testing.T) {
-	//	source := fakeQueryFunc(func(start, end time.Time, entries chan Entry) {
-	//		e := Entry{
-	//			Timestamp:  start,
-	//			Attributes: map[string]float64{"raw": 66.6},
-	//		}
-	//		entries <- e
-	//	})
+	source := fakeQueryFunc(func(start, end time.Time, entries chan Entry) {
+		e := Entry{
+			Timestamp:  start,
+			Attributes: map[string]float64{"raw": 66.6},
+		}
+		entries <- e
+	})
 	store := NewBucketStore(60*time.Second, math.Pow10(1))
+	store.Source = source
 	filter := NewAggregateFilter(0, []string{"raw"}, nil)
+	store.Filter = filter
 	level := Level{
 		Filter: filter,
 		Store:  store,

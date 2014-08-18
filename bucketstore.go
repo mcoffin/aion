@@ -33,6 +33,7 @@ type BucketStore struct {
 	Multiplier float64
 	Source     Querier
 	Repository BucketRepository
+	Filter     Filter
 	contexts   map[string]*btree.BTree
 }
 
@@ -122,12 +123,23 @@ func (self *BucketStore) populateBucket(series uuid.UUID, bkt memoryBucket) erro
 	// First, try to query the bucket out of the repository
 	if self.Repository != nil {
 		attribData, err := self.Repository.Get(series, self.Duration, bkt.start, nil)
-		if err != nil {
+		if err == nil {
+			bkt.populate(attribData)
+			return nil
+		}
+	}
+	// If the bucket wasn't queried from the repo, then do it from source
+	if self.Source != nil {
+		gotBucket := false
+		err := ForAllQuery(series, bkt.start, bkt.start.Add(self.Duration), nil, self.Source, func(e Entry) {
+			gotBucket = true
+			self.Filter.Insert(series, e) // TODO: handle that err doe
+		})
+		if gotBucket {
 			return err
 		}
-		bkt.populate(attribData)
 	}
-	// TODO: if bucket wasn't queried out of repo, query from source
+	// If the bucket wasn't in src or repo, then it's a new bucket!
 	return nil
 }
 
