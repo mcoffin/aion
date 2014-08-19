@@ -60,6 +60,18 @@ func (self memoryBucket) writeEntry(entry Entry, multiplier float64) {
 	}
 }
 
+func (self memoryBucket) encodedAttributes() []EncodedBucketAttribute {
+	ret := make([]EncodedBucketAttribute, len(self.contexts))
+	i := 0
+	for name, ctx := range self.contexts {
+		ret[i] = EncodedBucketAttribute{
+			Name: name,
+			Data: ctx.buffer.Bytes(),
+		}
+	}
+	return ret
+}
+
 func (self memoryBucket) populate(attribs []EncodedBucketAttribute) {
 	for _, a := range attribs {
 		buf := bytes.NewBuffer(a.Data)
@@ -172,6 +184,19 @@ func (self *BucketStore) getOrCreateBucket(series uuid.UUID, entry Entry) memory
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	bkt := self.getOrCreateBucket(series, entry)
 	bkt.writeEntry(entry, self.Multiplier)
+	// TODO: write old buckets
+
+	if self.Repository != nil {
+		tree := self.contexts[series.String()] // We don't need to use getOrCreate because we know it was created in getOrCreateBucket
+		tree.AscendLessThan(tree.Max(), llrb.ItemIterator(func(i llrb.Item) bool {
+			b := i.(memoryBucket)
+			err := self.Repository.Put(series, self.Duration, b.start, b.encodedAttributes())
+			if err != nil {
+				tree.Delete(b)
+			}
+			return true // We don't want to stop the tranversing
+		}))
+	}
 	return nil
 }
 
