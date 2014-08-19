@@ -1,0 +1,35 @@
+#!/bin/bash
+
+dbtype="leveldb"
+dbpath="/tmp/aion"
+
+cayleyflags="-db=$dbtype -dbpath=$dbpath"
+
+cayley_clean () {
+	rm -rf $dbpath
+}
+
+if [ -z "$1" ] ; then
+	echo 'usage: cayley <command>'
+	exit 2
+fi
+
+case "$1" in
+create)
+	cayley init $cayleyflags
+	;;
+delete)
+	cayley_clean
+	;;
+recreate)
+	cayley_clean
+	cayley init $cayleyflags
+	;;
+http)
+	cayley http $cayleyflags
+	;;
+*)
+	echo Unrecognized command \'$1\'
+	exit 1
+	;;
+esac
