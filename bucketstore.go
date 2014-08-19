@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/FlukeNetworks/aion/bucket"
-	"github.com/google/btree"
+	"github.com/petar/GoLLRB/llrb"
 
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -34,7 +34,7 @@ type BucketStore struct {
 	Source     Querier
 	Repository BucketRepository
 	Filter     Filter
-	contexts   map[string]*btree.BTree
+	contexts   map[string]*llrb.LLRB
 }
 
 type memoryBucketAttribute struct {
@@ -92,8 +92,8 @@ func (self memoryBucket) verifyContexts(entry Entry) {
 	}
 }
 
-// memoryBucket implements the btree.Item iterface
-func (a memoryBucket) Less(b btree.Item) bool {
+// memoryBucket implements the llrb.Item iterface
+func (a memoryBucket) Less(b llrb.Item) bool {
 	other := b.(memoryBucket)
 	return a.start.Before(other.start)
 }
@@ -102,7 +102,7 @@ func NewBucketStore(duration time.Duration, multiplier float64) *BucketStore {
 	return &BucketStore{
 		Duration:   duration,
 		Multiplier: multiplier,
-		contexts:   map[string]*btree.BTree{},
+		contexts:   map[string]*llrb.LLRB{},
 	}
 }
 
@@ -110,10 +110,10 @@ func (self BucketStore) bucketStartTime(t time.Time) time.Time {
 	return t.Truncate(self.Duration)
 }
 
-func (self *BucketStore) getOrCreateTree(series uuid.UUID) *btree.BTree {
+func (self *BucketStore) getOrCreateTree(series uuid.UUID) *llrb.LLRB {
 	tree := self.contexts[series.String()]
 	if tree == nil {
-		tree = btree.New(2)
+		tree = llrb.New()
 		self.contexts[series.String()] = tree
 	}
 	return tree
