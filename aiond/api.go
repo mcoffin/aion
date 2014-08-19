@@ -81,7 +81,6 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 		}
 		i++
 	}
-	fmt.Println(tags)
 	err = self.db.TagStore.Tag(config.Series, tags)
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
