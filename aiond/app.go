@@ -83,6 +83,7 @@ func main() {
 	r.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}", ctx.QuerySeries).Methods("GET")
 	r.HandleFunc("/series", ctx.TagQuery).Methods("GET")
 	r.HandleFunc("/series", ctx.CreateSeries).Methods("POST")
+	r.HandleFunc("/datapoints", ctx.Query).Methods("GET")
 
 	// Setup basic recovery and logging middleware
 	n := negroni.Classic()

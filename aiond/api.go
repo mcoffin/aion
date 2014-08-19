@@ -1,15 +1,16 @@
 package main
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/FlukeNetworks/aion"
-	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/FlukeNetworks/aion"
+	"github.com/gorilla/mux"
 )
 
 type Context struct {
@@ -17,7 +18,7 @@ type Context struct {
 }
 
 type createSeriesConfig struct {
-	Series uuid.UUID            `json:"-"`
+	Series uuid.UUID         `json:"-"`
 	Tags   map[string]string `json:"tags"`
 }
 
@@ -25,25 +26,37 @@ type createSeriesResponse struct {
 	Series string `json:"id"`
 }
 
-func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
+func (self Context) findSeries(req *http.Request) ([]uuid.UUID, error) {
 	params := req.URL.Query()
 	tags := make([]aion.Tag, len(params))
 	i := 0
 	for k, v := range params {
 		tags[i] = aion.Tag{
-			Name: k,
+			Name:  k,
 			Value: v[0],
 		}
 		i++
 	}
-	seriesList, err := self.db.TagStore.Find(tags)
+	return self.db.TagStore.Find(tags)
+}
+
+func (self Context) Query(res http.ResponseWriter, req *http.Request) {
+	_, err := self.findSeries(req)
+	if err != nil {
+		writeError(res, http.StatusServiceUnavailable, err)
+	}
+	writeError(res, http.StatusNotImplemented, errors.New("Query not yet implemented"))
+}
+
+func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
+	seriesList, err := self.findSeries(req)
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
 	}
 	fmt.Fprint(res, "[")
 	for i, series := range seriesList {
 		fmt.Fprintf(res, "\"%s\"", series.String())
-		if i < len(seriesList) - 1 {
+		if i < len(seriesList)-1 {
 			fmt.Fprint(res, ",")
 		}
 	}
@@ -63,7 +76,7 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 	i := 0
 	for t, v := range config.Tags {
 		tags[i] = aion.Tag{
-			Name: t,
+			Name:  t,
 			Value: v,
 		}
 		i++
