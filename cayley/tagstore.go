@@ -57,17 +57,21 @@ func (self TagStore) Find(tags []aion.Tag) ([]uuid.UUID, error) {
 	fmt.Fprintf(queryBuilder, "%s');\n%s", string(tagsJson), queryBase)
 	series := make(chan interface{})
 	go session.ExecInput(queryBuilder.String(), series, 0)
+	count := 0
 	for item := range series {
+		count++
 		session.BuildJson(item)
 	}
 	genRes, err := session.GetJson()
 	if err != nil {
 		return nil, err
 	}
-	ret := []uuid.UUID{}
+	ret := make([]uuid.UUID, count)
+	count = 0
 	for _, item := range genRes {
 		m := item.(map[string]string)
-		ret = append(ret, uuid.Parse(m["id"])) // TODO: Allocate in one step? Use steps from BuildJson iteration
+		ret[count] = uuid.Parse(m["id"])
+		count++
 	}
-	return ret, nil
+	return ret[:count], nil
 }
