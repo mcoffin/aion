@@ -135,7 +135,7 @@ func (self *BucketStore) populateBucket(series uuid.UUID, bkt memoryBucket) erro
 	// First, try to query the bucket out of the repository
 	if self.Repository != nil {
 		attribData, err := self.Repository.Get(series, self.Duration, bkt.start, nil)
-		if err == nil {
+		if err == nil && attribData != nil {
 			bkt.populate(attribData)
 			return nil
 		}
@@ -189,6 +189,9 @@ func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	if self.Repository != nil {
 		tree := self.contexts[series.String()] // We don't need to use getOrCreate because we know it was created in getOrCreateBucket
 		tree.AscendLessThan(tree.Max(), llrb.ItemIterator(func(i llrb.Item) bool {
+			if !i.Less(tree.Max()) {
+				return true
+			}
 			b := i.(memoryBucket)
 			err := self.Repository.Put(series, self.Duration, b.start, b.encodedAttributes())
 			if err != nil {

@@ -152,8 +152,11 @@ func tempCreateAion() (*aion.Aion, error) {
 		Table: &tbl2,
 	}
 	store.Repository = repo
+	store.Source = cache
+	filter := aion.NewAggregateFilter(0, []string{"raw"}, nil)
+	store.Filter = filter
 	level1 := aion.Level{
-		Filter: aion.NewAggregateFilter(0, []string{"raw"}, nil),
+		Filter: filter,
 		Store:  store,
 	}
 
