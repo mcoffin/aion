@@ -74,7 +74,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ctx := Context{db}
+	ctx := Context{db, "http://localhost:8080"}
 
 	// Setup routes
 	router := mux.NewRouter()

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -14,7 +17,8 @@ import (
 )
 
 type Context struct {
-	db *aion.Aion
+	db       *aion.Aion
+	Endpoint string
 }
 
 type createSeriesConfig struct {
@@ -26,8 +30,7 @@ type createSeriesResponse struct {
 	Series string `json:"id"`
 }
 
-func (self Context) findSeries(req *http.Request) ([]uuid.UUID, error) {
-	params := req.URL.Query()
+func (self Context) findSeries(params map[string][]string) ([]uuid.UUID, error) {
 	tags := make([]aion.Tag, len(params))
 	i := 0
 	for k, v := range params {
@@ -41,15 +44,88 @@ func (self Context) findSeries(req *http.Request) ([]uuid.UUID, error) {
 }
 
 func (self Context) Query(res http.ResponseWriter, req *http.Request) {
-	_, err := self.findSeries(req)
+	params := req.URL.Query()
+	if params["s"] == nil {
+		writeError(res, http.StatusBadRequest, errors.New("timedb: no start time given"))
+		return
+	}
+	start, err := parseUnixTime(params["s"][0])
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	if params["e"] == nil {
+		writeError(res, http.StatusBadRequest, errors.New("timedb: no end time given"))
+		return
+	}
+	end, err := parseUnixTime(params["e"][0])
+	if err != nil {
+		writeError(res, http.StatusBadRequest, err)
+		return
+	}
+	var level int64 = 0
+	if params["l"] != nil {
+		level, err = strconv.ParseInt(params["l"][0], 10, 64)
+		if err != nil {
+			writeError(res, http.StatusBadRequest, err)
+			return
+		}
+	}
+	attributes := params["a"]
+	// Delete the query parameters, leaving only the tags
+	delete(params, "s")
+	delete(params, "e")
+	delete(params, "l")
+	delete(params, "a")
+	seriesList, err := self.findSeries(params)
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
+		return
 	}
-	writeError(res, http.StatusNotImplemented, errors.New("Query not yet implemented"))
+	responses := make(map[string][]byte, len(seriesList))
+	urlBuf := bytes.NewBufferString(self.Endpoint + "/v1/series/%s?")
+	fmt.Fprintf(urlBuf, "s=%d&e=%d&l=%d", start.Unix(), end.Unix(), level)
+	for _, attrib := range attributes {
+		fmt.Fprint(urlBuf, "&a="+attrib)
+	}
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	wg.Add(len(seriesList))
+	for _, series := range seriesList {
+		// Spawn a goroutine to run each of the required gets
+		go func() {
+			// This has to be done because we have an early return error code path
+			defer wg.Done()
+			resp, err := http.Get(fmt.Sprintf(urlBuf.String(), series.String()))
+			if err != nil {
+				writeError(res, http.StatusServiceUnavailable, err)
+				return
+			}
+			defer resp.Body.Close()
+			// TODO: fix this high memory usage
+			mutex.Lock()
+			responses[series.String()], err = ioutil.ReadAll(resp.Body)
+			mutex.Unlock()
+		}()
+	}
+	wg.Wait()
+	fmt.Fprint(res, "{")
+	i := 0
+	for seriesStr, data := range responses {
+		seriesStrData, _ := json.Marshal(seriesStr)
+		res.Write(seriesStrData)
+		fmt.Fprint(res, ":")
+		res.Write(data)
+		if i < len(responses)-1 {
+			fmt.Fprint(res, ",")
+		}
+		i++
+	}
+	fmt.Fprint(res, "}")
 }
 
 func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
-	seriesList, err := self.findSeries(req)
+	seriesList, err := self.findSeries(req.URL.Query())
 	if err != nil {
 		writeError(res, http.StatusServiceUnavailable, err)
 	}
