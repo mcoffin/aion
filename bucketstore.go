@@ -184,7 +184,6 @@ func (self *BucketStore) getOrCreateBucket(series uuid.UUID, entry Entry) memory
 func (self *BucketStore) Insert(series uuid.UUID, entry Entry) error {
 	bkt := self.getOrCreateBucket(series, entry)
 	bkt.writeEntry(entry, self.Multiplier)
-	// TODO: write old buckets
 
 	if self.Repository != nil {
 		tree := self.contexts[series.String()] // We don't need to use getOrCreate because we know it was created in getOrCreateBucket
