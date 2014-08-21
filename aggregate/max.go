@@ -1,18 +1,20 @@
 package aggregate
 
-import "math"
+import (
+	"math"
+	"sync"
+	"time"
+)
 
 type MaxAggregator struct {
-	first bool
+	first sync.Once
 	max   float64
 }
 
-func (self *MaxAggregator) Add(value float64) {
-	if self.first {
+func (self *MaxAggregator) Add(value float64, timestamp time.Time) {
+	self.first.Do(func() {
 		self.max = value
-		self.first = false
-		return
-	}
+	})
 	self.max = math.Max(self.max, value)
 }
 
@@ -21,5 +23,5 @@ func (self MaxAggregator) Value() float64 {
 }
 
 func (self *MaxAggregator) Reset() {
-	self.first = true
+	self.first = sync.Once{}
 }

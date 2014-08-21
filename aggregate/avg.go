@@ -1,5 +1,7 @@
 package aggregate
 
+import "time"
+
 type AvgAggregator struct {
 	count int
 	sum   float64
@@ -10,7 +12,7 @@ func (self *AvgAggregator) Reset() {
 	self.sum = 0.0
 }
 
-func (self *AvgAggregator) Add(value float64) {
+func (self *AvgAggregator) Add(value float64, timestamp time.Time) {
 	self.sum += value
 	self.count++
 }

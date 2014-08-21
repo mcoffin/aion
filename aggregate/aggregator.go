@@ -2,10 +2,11 @@ package aggregate
 
 import (
 	"fmt"
+	"time"
 )
 
 type Aggregator interface {
-	Add(value float64)
+	Add(value float64, timestamp time.Time)
 	Value() float64
 	Reset()
 }
@@ -14,7 +15,7 @@ type RawAggregator struct {
 	value float64
 }
 
-func (self *RawAggregator) Add(v float64) {
+func (self *RawAggregator) Add(v float64, timestamp time.Time) {
 	self.value = v
 }
 
@@ -30,7 +31,7 @@ type CountAggregator struct {
 	count int
 }
 
-func (self *CountAggregator) Add(v float64) {
+func (self *CountAggregator) Add(v float64, timestamp time.Time) {
 	self.count++
 }
 

@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"testing"
+	"time"
 )
 
 var testVals = []float64{1.1, 2.2, -3.1}
@@ -11,8 +12,10 @@ func TestCountAggregator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	start := time.Now()
 	for _, v := range testVals {
-		a.Add(v)
+		a.Add(v, start)
+		start = start.Add(time.Second)
 	}
 	realCount := float64(len(testVals))
 	if a.Value() != realCount {
@@ -26,9 +29,11 @@ func TestAvgAggregator(t *testing.T) {
 		t.Fatal(err)
 	}
 	var sum float64 = 0.0
+	start := time.Now()
 	for _, v := range testVals {
 		sum += v
-		a.Add(v)
+		a.Add(v, start)
+		start = start.Add(time.Second)
 	}
 	avg := (sum / float64(len(testVals)))
 	val := a.Value()
@@ -43,11 +48,13 @@ func TestMinAggregator(t *testing.T) {
 		t.Fatal(err)
 	}
 	min := testVals[0]
+	start := time.Now()
 	for _, v := range testVals {
 		if v < min {
 			min = v
 		}
-		a.Add(min)
+		a.Add(v, start)
+		start = start.Add(time.Second)
 	}
 	val := a.Value()
 	if val != min {
@@ -61,11 +68,13 @@ func TestMaxAggregator(t *testing.T) {
 		t.Fatal(err)
 	}
 	min := testVals[0]
+	start := time.Now()
 	for _, v := range testVals {
 		if v > min {
 			min = v
 		}
-		a.Add(min)
+		a.Add(v, start)
+		start = start.Add(time.Second)
 	}
 	val := a.Value()
 	if val != min {

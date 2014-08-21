@@ -1,16 +1,19 @@
 package aggregate
 
+import (
+	"sync"
+	"time"
+)
+
 type MinAggregator struct {
-	first bool
+	first sync.Once
 	min   float64
 }
 
-func (self *MinAggregator) Add(value float64) {
-	if self.first {
+func (self *MinAggregator) Add(value float64, timestamp time.Time) {
+	self.first.Do(func() {
 		self.min = value
-		self.first = false
-		return
-	}
+	})
 	if value < self.min {
 		self.min = value
 	}
@@ -21,5 +24,5 @@ func (self MinAggregator) Value() float64 {
 }
 
 func (self *MinAggregator) Reset() {
-	self.first = true
+	self.first = sync.Once{}
 }

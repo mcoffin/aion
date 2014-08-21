@@ -1,9 +1,10 @@
 package aion
 
 import (
+	"time"
+
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/FlukeNetworks/aion/aggregate"
-	"time"
 )
 
 // A FilterBase contains the components that every filter will contain
@@ -80,7 +81,7 @@ func (self *AggregateFilter) Insert(series uuid.UUID, entry Entry) error {
 		return err
 	}
 	for name, a := range ctx.aggregators {
-		a.Add(entry.Attributes[name])
+		a.Add(entry.Attributes[name], entry.Timestamp)
 	}
 	// Dump all completed contexts for this series to handler
 	seriesContexts := self.contexts[series.String()]
