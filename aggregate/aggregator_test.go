@@ -21,6 +21,10 @@ func TestCountAggregator(t *testing.T) {
 	if a.Value() != realCount {
 		t.Errorf("Expected count %v but got %v\n", realCount, a.Value())
 	}
+	a.Reset()
+	if a.Value() != 0.0 {
+		t.Errorf("Reset did not reset count to 0\n")
+	}
 }
 
 func TestAvgAggregator(t *testing.T) {
@@ -38,7 +42,12 @@ func TestAvgAggregator(t *testing.T) {
 	avg := (sum / float64(len(testVals)))
 	val := a.Value()
 	if val != avg {
-		t.Fatalf("Expected average %v but got %v\n", avg, val)
+		t.Errorf("Expected average %v but got %v\n", avg, val)
+	}
+	a.Reset()
+	a.Add(testVals[0], time.Now())
+	if a.Value() != testVals[0] {
+		t.Errorf("Reset failed to reset avg\n")
 	}
 }
 
@@ -58,7 +67,12 @@ func TestMinAggregator(t *testing.T) {
 	}
 	val := a.Value()
 	if val != min {
-		t.Fatalf("Expected min %v but got %v\n", min, val)
+		t.Errorf("Expected min %v but got %v\n", min, val)
+	}
+	a.Reset()
+	a.Add(testVals[0], time.Now())
+	if a.Value() != testVals[0] {
+		t.Errorf("Reset failed to reset min\n")
 	}
 }
 
@@ -78,6 +92,11 @@ func TestMaxAggregator(t *testing.T) {
 	}
 	val := a.Value()
 	if val != min {
-		t.Fatalf("Expected max %v but got %v\n", min, val)
+		t.Errorf("Expected max %v but got %v\n", min, val)
+	}
+	a.Reset()
+	a.Add(testVals[0], time.Now())
+	if a.Value() != testVals[0] {
+		t.Errorf("Reset failed to reset max\n")
 	}
 }
