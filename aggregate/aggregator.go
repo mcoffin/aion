@@ -50,8 +50,12 @@ func NewAggregator(aggregation string) (Aggregator, error) {
 		a = new(RawAggregator)
 	case "min":
 		a = new(MinAggregator)
+	case "tmin":
+		a = new(TMinAggregator)
 	case "max":
 		a = new(MaxAggregator)
+	case "tmax":
+		a = new(TMaxAggregator)
 	case "avg":
 		a = new(AvgAggregator)
 	case "count":

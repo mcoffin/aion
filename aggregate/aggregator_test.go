@@ -100,3 +100,59 @@ func TestMaxAggregator(t *testing.T) {
 		t.Errorf("Reset failed to reset max\n")
 	}
 }
+
+func TestTMinAggregator(t *testing.T) {
+	a, err := NewAggregator("tmin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	min := testVals[0]
+	start := time.Now()
+	tmin := start
+	for _, v := range testVals {
+		if v < min {
+			min = v
+			tmin = start
+		}
+		a.Add(v, start)
+		start = start.Add(time.Second)
+	}
+	val := a.Value()
+	if val != float64(tmin.Unix()) {
+		t.Errorf("Expected tmin %v but got %v\n", float64(tmin.Unix()), val)
+	}
+	a.Reset()
+	start = time.Now()
+	a.Add(testVals[0], start)
+	if a.Value() != float64(start.Unix()) {
+		t.Errorf("Reset failed to reset min! Expected: %d, Found: %v\n", int64(a.Value()), start.Unix())
+	}
+}
+
+func TestTMaxAggregator(t *testing.T) {
+	a, err := NewAggregator("tmax")
+	if err != nil {
+		t.Fatal(err)
+	}
+	min := testVals[0]
+	start := time.Now()
+	tmin := start
+	for _, v := range testVals {
+		if v > min {
+			min = v
+			tmin = start
+		}
+		a.Add(v, start)
+		start = start.Add(time.Second)
+	}
+	val := a.Value()
+	if val != float64(tmin.Unix()) {
+		t.Errorf("Expected tmax %v but got %v\n", float64(tmin.Unix()), val)
+	}
+	a.Reset()
+	start = time.Now()
+	a.Add(testVals[0], start)
+	if a.Value() != float64(start.Unix()) {
+		t.Errorf("Reset failed to reset max\n")
+	}
+}
