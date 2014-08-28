@@ -1,8 +1,9 @@
 package bucket
 
 import (
-	"code.google.com/p/deltagolomb"
 	"io"
+
+	"code.google.com/p/deltagolomb"
 )
 
 // A BucketEncoder writes a series of integers to a writer
@@ -32,6 +33,11 @@ func (self *BucketEncoder) Write(values []int64) {
 	for _, v := range values {
 		self.WriteInt(v)
 	}
+}
+
+// "Flushes" any remaining partial bits to w
+func (self *BucketEncoder) Flush(w io.Writer) {
+	self.genc.WritePartialBits(w)
 }
 
 // "Closes" the encoder, flushing all un-written values.
