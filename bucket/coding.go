@@ -3,7 +3,7 @@ package bucket
 import (
 	"io"
 
-	"code.google.com/p/deltagolomb"
+	"bitbucket.org/m_coffin/deltagolomb"
 )
 
 // A BucketEncoder writes a series of integers to a writer
