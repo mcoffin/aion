@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/FlukeNetworks/aion/cayley"
 	"github.com/codegangsta/negroni"
+	"github.com/google/cayley/graph"
 	"github.com/gorilla/mux"
 	influxdb "github.com/influxdb/influxdb/client"
 )
@@ -57,10 +59,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	ts, err := graph.NewTripleStore("leveldb", "/tmp/aiontag", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ctx := Context{
-		Influx:   influxClient,
-		TagStore: nil,
+		Influx: influxClient,
 		// TODO: load this from environment
+		TagStore:           cayley.TagStore{ts},
 		StoredAggregations: []string{"min", "max", "mean", "count"},
 		RollupPeriods:      []string{"1m"},
 	}

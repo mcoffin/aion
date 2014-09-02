@@ -1,4 +1,4 @@
-package main
+package tagstore
 
 import "code.google.com/p/go-uuid/uuid"
 
@@ -9,5 +9,5 @@ type Tag struct {
 
 type TagStore interface {
 	Tag(series uuid.UUID, tags []Tag) error
-	Find(tags []Tag) ([]uuid.UUID, error)
+	Find(tags []Tag) (<-chan uuid.UUID, error)
 }

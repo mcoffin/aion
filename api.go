@@ -9,6 +9,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
+	"github.com/FlukeNetworks/aion/tagstore"
 	influxdb "github.com/influxdb/influxdb/client"
 )
 
@@ -19,7 +20,7 @@ type InputPoint struct {
 
 type Context struct {
 	Influx             *influxdb.Client
-	TagStore           TagStore
+	TagStore           tagstore.TagStore
 	StoredAggregations []string
 	RollupPeriods      []string
 }
@@ -70,18 +71,16 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tags := make([]Tag, 0, len(config.Tags))
+	tags := make([]tagstore.Tag, 0, len(config.Tags))
 	for k, v := range config.Tags {
-		tags = append(tags, Tag{k, v})
+		tags = append(tags, tagstore.Tag{k, v})
 	}
 
 	// Store the tag metadata for the series
-	if self.TagStore != nil {
-		err = self.TagStore.Tag(series, tags)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusServiceUnavailable)
-			return
-		}
+	err = self.TagStore.Tag(series, tags)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
 	}
 
 	// Run the continuous queries for the series on influx
@@ -98,8 +97,30 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 	res.Write(outData)
 }
 
+func tagsForMap(m map[string][]string) []tagstore.Tag {
+	tags := make([]tagstore.Tag, 0, len(m))
+	for k, v := range m {
+		tags = append(tags, tagstore.Tag{k, v[0]})
+	}
+	return tags
+}
+
 func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
-	// TODO: query series out by tags
+	tags := tagsForMap(req.URL.Query())
+	// TODO: should probably catch this error somehow
+	series, _ := self.TagStore.Find(tags)
+	res.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(res, "[")
+	first := true
+	for s := range series {
+		if first {
+			first = false
+		} else {
+			fmt.Fprint(res, ",")
+		}
+		fmt.Fprintf(res, "\"%s\"", s.String())
+	}
+	fmt.Fprint(res, "]")
 }
 
 func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) {
