@@ -124,5 +124,39 @@ func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
 }
 
 func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) {
-	// TODO: Query datapoints
+	params := req.URL.Query()
+
+	if params["select"] == nil {
+		http.Error(res, "aion: No selection made", http.StatusBadRequest)
+		return
+	}
+	selectClause := params["select"]
+	delete(params, "select")
+	period := params["period"]
+	if period == nil {
+		period = []string{""}
+	}
+	delete(params, "period")
+	where := params["where"]
+	if where == nil {
+		where = []string{""}
+	}
+	delete(params, "where")
+
+	tags := tagsForMap(params)
+	// TODO: should probably catch this error somehow
+	series, _ := self.TagStore.Find(tags)
+	seriesToQuery := []string{}
+	for s := range series {
+		seriesToQuery = append(seriesToQuery, seriesName(s)+period[0])
+	}
+	q := fmt.Sprintf("select %s from %s %s", selectClause[0], strings.Join(seriesToQuery, " merge "), where[0])
+	seriesOut, err := self.Influx.Query(q, influxdb.Microsecond)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	res.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(res)
+	enc.Encode(seriesOut)
 }
