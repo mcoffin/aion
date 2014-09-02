@@ -123,6 +123,8 @@ func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(res, "]")
 }
 
+// TODO: DatapointsQuery won't scale if we can't hold the response in memory. Should probably fix that
+
 func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) {
 	params := req.URL.Query()
 
