@@ -1,7 +1,9 @@
 package bucket
 
 import (
+	"fmt"
 	"io"
+	"math"
 
 	"bitbucket.org/m_coffin/deltagolomb"
 )
@@ -24,6 +26,10 @@ func NewBucketEncoder(start int64, out io.Writer) *BucketEncoder {
 
 // Writes an integer from a series to the BucketEncoder
 func (self *BucketEncoder) WriteInt(next int64) {
+	delta := next - self.last
+	if delta > math.MaxInt32 || delta < math.MinInt32 {
+		panic(fmt.Errorf("Delta %d cannot be handled by a golomb encoder", delta))
+	}
 	self.genc.WriteInt(int(next - self.last))
 	self.last = next
 }
@@ -38,6 +44,11 @@ func (self *BucketEncoder) Write(values []int64) {
 // "Flushes" any remaining partial bits to w
 func (self *BucketEncoder) Flush(w io.Writer) {
 	self.genc.WritePartialBits(w)
+}
+
+// "Flushes" the buffer used by the golomb encoder
+func (self *BucketEncoder) FlushBuffer() error {
+	return self.genc.Flush()
 }
 
 // "Closes" the encoder, flushing all un-written values.

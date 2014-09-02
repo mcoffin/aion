@@ -33,10 +33,31 @@ func TestEncodeDecode(t *testing.T) {
 	}
 }
 
-func TestLargeNumbers(t *testing.T) {
+func TestFlush(t *testing.T) {
+	var buf bytes.Buffer
+	enc := NewBucketEncoder(0, &buf)
+	enc.WriteInt(31)
+	enc.WriteInt(32)
+	enc.FlushBuffer()
+	decBuf := bytes.NewBuffer(buf.Bytes())
+	enc.Flush(decBuf)
+	dec := NewBucketDecoder(0, decBuf)
+	decoded := make([]int64, 2)
+	n, err := dec.Read(decoded)
+	if err != nil && err.Error() != io.EOF.Error() {
+		t.Fatalf("Read %d items before error: %v", n, err)
+	}
+	if n != 2 {
+		t.Fatalf("Decoded %d values instead of 2", n)
+	}
+}
+
+func TestFlushLargeNumbers(t *testing.T) {
+	largeValues := []int64{1409337152104649, 1409337156864482, 1409337159111547, 1409337161269084}
 	var buf bytes.Buffer
 	enc := NewBucketEncoder(1409336945224193, &buf)
-	enc.Write([]int64{1409337152104649, 1409337156864482, 1409337159111547, 1409337161269084})
+	enc.Write(largeValues)
+	enc.FlushBuffer()
 	decBuf := bytes.NewBuffer(buf.Bytes())
 	enc.Flush(decBuf)
 	dec := NewBucketDecoder(1409336945224193, decBuf)
@@ -51,25 +72,7 @@ func TestLargeNumbers(t *testing.T) {
 			break
 		}
 	}
-	if overall != 4 {
-		t.Errorf("Read %d items instead of 4", overall)
-	}
-}
-
-func TestFlush(t *testing.T) {
-	var buf bytes.Buffer
-	enc := NewBucketEncoder(0, &buf)
-	enc.WriteInt(31)
-	enc.WriteInt(32)
-	decBuf := bytes.NewBuffer(buf.Bytes())
-	enc.Flush(decBuf)
-	dec := NewBucketDecoder(0, decBuf)
-	decoded := make([]int64, 2)
-	n, err := dec.Read(decoded)
-	if err != nil && err.Error() != io.EOF.Error() {
-		t.Fatalf("Read %d items before error: %v", n, err)
-	}
-	if n != 2 {
-		t.Fatalf("Decoded %d values instead of 2", n)
+	if overall != len(largeValues) {
+		t.Errorf("Read %d items instead of %d", overall, len(largeValues))
 	}
 }
