@@ -65,7 +65,8 @@ func main() {
 	}
 
 	ctx := Context{
-		Influx: influxClient,
+		Influx:       influxClient,
+		InfluxConfig: &influxConfig,
 		// TODO: load this from environment
 		TagStore:           cayley.TagStore{ts},
 		StoredAggregations: []string{"min", "max", "mean", "count"},

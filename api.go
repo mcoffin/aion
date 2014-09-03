@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -20,6 +21,7 @@ type InputPoint struct {
 
 type Context struct {
 	Influx             *influxdb.Client
+	InfluxConfig       *influxdb.ClientConfig
 	TagStore           tagstore.TagStore
 	StoredAggregations []string
 	RollupPeriods      []string
@@ -153,12 +155,6 @@ func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) 
 		seriesToQuery = append(seriesToQuery, seriesName(s)+period[0])
 	}
 	q := fmt.Sprintf("select %s from %s %s", selectClause[0], strings.Join(seriesToQuery, " merge "), where[0])
-	seriesOut, err := self.Influx.Query(q, influxdb.Microsecond)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	res.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(res)
-	enc.Encode(seriesOut)
+	newUrl := fmt.Sprintf("http://%s/db/%s/series?q=%s&u=%s&p=%s", self.InfluxConfig.Host, self.InfluxConfig.Database, url.QueryEscape(q), self.InfluxConfig.Username, self.InfluxConfig.Password)
+	http.Redirect(res, req, newUrl, http.StatusSeeOther)
 }
