@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/FlukeNetworks/aion/cayley"
+	aiondynamodb "github.com/FlukeNetworks/aion/dynamodb"
+	"github.com/FlukeNetworks/aion/tags"
 	"github.com/codegangsta/negroni"
-	"github.com/google/cayley/graph"
+	"github.com/crowdmob/goamz/aws"
+	"github.com/crowdmob/goamz/dynamodb"
 	"github.com/gorilla/mux"
 	influxdb "github.com/influxdb/influxdb/client"
 )
@@ -30,6 +32,17 @@ func ensureDatabase(client *influxdb.Client, database string) error {
 	}
 	if !found {
 		return client.CreateDatabase(database)
+	}
+	return nil
+}
+
+func seedSearcher(src tags.Store, searcher tags.Searcher) error {
+	series, err := src.Scan()
+	if err != nil {
+		return err
+	}
+	for s := range series {
+		searcher.Insert(s.SeriesID, s.Tags)
 	}
 	return nil
 }
@@ -59,24 +72,47 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ts, err := graph.NewTripleStore("leveldb", "/tmp/aiontag", nil)
+	// TODO: load from env
+	auth, err := aws.EnvAuth()
 	if err != nil {
 		log.Fatal(err)
+	}
+	server := &dynamodb.Server{
+		Auth:   auth,
+		Region: aws.Region{Name: "localhost", DynamoDBEndpoint: "http://localhost:8000"},
+	}
+	table := dynamodb.Table{
+		Server: server,
+		Name:   "aion",
+		Key: dynamodb.PrimaryKey{
+			KeyAttribute: &dynamodb.Attribute{
+				Type: dynamodb.TYPE_STRING,
+				Name: "series",
+			},
+			RangeAttribute: nil,
+		},
 	}
 
 	ctx := Context{
 		Influx:       influxClient,
 		InfluxConfig: &influxConfig,
 		// TODO: load this from environment
-		TagStore:           cayley.TagStore{ts},
+		TagStore:           &aiondynamodb.TagStore{table},
+		TagSearcher:        nil,
 		StoredAggregations: []string{"min", "max", "mean", "count"},
 		RollupPeriods:      []string{"1m"},
+	}
+
+	err = seedSearcher(ctx.TagStore, ctx.TagSearcher)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	router := mux.NewRouter()
 	rv1 := router.PathPrefix("/v1").Subrouter()
 	rv1.HandleFunc("/series", ctx.CreateSeries).Methods("POST")
 	rv1.HandleFunc("/series", ctx.SeriesQuery).Methods("GET")
+	rv1.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/tags", ctx.TagQuery).Methods("GET")
 	rv1.HandleFunc("/datapoints", ctx.DatapointsQuery).Methods("GET")
 
 	n := negroni.Classic()

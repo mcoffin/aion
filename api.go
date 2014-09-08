@@ -10,7 +10,8 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
-	"github.com/FlukeNetworks/aion/tagstore"
+	"github.com/FlukeNetworks/aion/tags"
+	"github.com/gorilla/mux"
 	influxdb "github.com/influxdb/influxdb/client"
 )
 
@@ -22,7 +23,8 @@ type InputPoint struct {
 type Context struct {
 	Influx             *influxdb.Client
 	InfluxConfig       *influxdb.ClientConfig
-	TagStore           tagstore.TagStore
+	TagStore           tags.Store
+	TagSearcher        tags.Searcher
 	StoredAggregations []string
 	RollupPeriods      []string
 }
@@ -73,13 +75,18 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tags := make([]tagstore.Tag, 0, len(config.Tags))
+	ts := make([]tags.Tag, 0, len(config.Tags))
 	for k, v := range config.Tags {
-		tags = append(tags, tagstore.Tag{k, v})
+		ts = append(ts, tags.Tag{k, v})
 	}
 
 	// Store the tag metadata for the series
-	err = self.TagStore.Tag(series, tags)
+	err = self.TagStore.Insert(series, ts)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	err = self.TagSearcher.Insert(series, ts)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -99,18 +106,21 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 	res.Write(outData)
 }
 
-func tagsForMap(m map[string][]string) []tagstore.Tag {
-	tags := make([]tagstore.Tag, 0, len(m))
+func tagsForMap(m map[string][]string) []tags.Tag {
+	ts := make([]tags.Tag, 0, len(m))
 	for k, v := range m {
-		tags = append(tags, tagstore.Tag{k, v[0]})
+		ts = append(ts, tags.Tag{k, v[0]})
 	}
-	return tags
+	return ts
 }
 
 func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
 	tags := tagsForMap(req.URL.Query())
-	// TODO: should probably catch this error somehow
-	series, _ := self.TagStore.Find(tags)
+	series, err := self.TagSearcher.Find(tags)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	res.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(res, "[")
 	first := true
@@ -125,7 +135,17 @@ func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(res, "]")
 }
 
-// TODO: DatapointsQuery won't scale if we can't hold the response in memory. Should probably fix that
+func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
+	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
+	ts, err := self.TagStore.Query(seriesUUID)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	res.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(res)
+	enc.Encode(ts)
+}
 
 func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) {
 	params := req.URL.Query()
@@ -148,8 +168,11 @@ func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) 
 	delete(params, "where")
 
 	tags := tagsForMap(params)
-	// TODO: should probably catch this error somehow
-	series, _ := self.TagStore.Find(tags)
+	series, err := self.TagSearcher.Find(tags)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	seriesToQuery := []string{}
 	for s := range series {
 		seriesToQuery = append(seriesToQuery, seriesName(s)+period[0])
