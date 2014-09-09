@@ -10,28 +10,22 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
-	"github.com/FlukeNetworks/aion/tags"
-	"github.com/gorilla/mux"
+	"github.com/FlukeNetworks/aion/meta"
 	influxdb "github.com/influxdb/influxdb/client"
 )
-
-type InputPoint struct {
-	Timestamp  int64            `json:"timestamp"`
-	Attributes map[string]int64 `json:"attributes"`
-}
 
 type Context struct {
 	Influx             *influxdb.Client
 	InfluxConfig       *influxdb.ClientConfig
-	TagStore           tags.Store
-	TagSearcher        tags.Searcher
+	MetaStore          meta.Store
+	MetaSearcher       meta.Searcher
 	StoredAggregations []string
 	RollupPeriods      []string
 }
 
 type createSeriesReq struct {
-	Tags    map[string]string `json:"tags"`
-	Rollups []string          `json:"rollups"`
+	Metadata interface{} `json:"metadata"`
+	Rollups  []string    `json:"rollups"`
 }
 
 func seriesName(series uuid.UUID) string {
@@ -75,18 +69,8 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ts := make([]tags.Tag, 0, len(config.Tags))
-	for k, v := range config.Tags {
-		ts = append(ts, tags.Tag{k, v})
-	}
-
-	// Store the tag metadata for the series
-	err = self.TagStore.Insert(series, ts)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	err = self.TagSearcher.Insert(series, ts)
+	// Put the series in the MetaStore
+	err = self.MetaStore.Index(series, config)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -106,47 +90,6 @@ func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 	res.Write(outData)
 }
 
-func tagsForMap(m map[string][]string) []tags.Tag {
-	ts := make([]tags.Tag, 0, len(m))
-	for k, v := range m {
-		ts = append(ts, tags.Tag{k, v[0]})
-	}
-	return ts
-}
-
-func (self Context) SeriesQuery(res http.ResponseWriter, req *http.Request) {
-	tags := tagsForMap(req.URL.Query())
-	series, err := self.TagSearcher.Find(tags)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	res.Header().Set("Content-Type", "application/json")
-	fmt.Fprint(res, "[")
-	first := true
-	for s := range series {
-		if first {
-			first = false
-		} else {
-			fmt.Fprint(res, ",")
-		}
-		fmt.Fprintf(res, "\"%s\"", s.String())
-	}
-	fmt.Fprint(res, "]")
-}
-
-func (self Context) TagQuery(res http.ResponseWriter, req *http.Request) {
-	seriesUUID := uuid.Parse(mux.Vars(req)["id"])
-	ts, err := self.TagStore.Query(seriesUUID)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	res.Header().Set("Content-Type", "application/json")
-	enc := json.NewEncoder(res)
-	enc.Encode(ts)
-}
-
 func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) {
 	params := req.URL.Query()
 
@@ -164,15 +107,17 @@ func (self Context) DatapointsQuery(res http.ResponseWriter, req *http.Request) 
 	where := params["where"]
 	if where == nil {
 		where = []string{""}
+	} else {
+		where = []string{"where " + where[0]}
 	}
 	delete(params, "where")
 
-	tags := tagsForMap(params)
-	series, err := self.TagSearcher.Find(tags)
+	series, err := self.MetaSearcher.Search(params["q"][0])
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+
 	seriesToQuery := []string{}
 	for s := range series {
 		seriesToQuery = append(seriesToQuery, seriesName(s)+period[0])

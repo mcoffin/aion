@@ -5,11 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	aiondynamodb "github.com/FlukeNetworks/aion/dynamodb"
-	"github.com/FlukeNetworks/aion/tags"
+	"github.com/FlukeNetworks/aion/elastisearch"
 	"github.com/codegangsta/negroni"
-	"github.com/crowdmob/goamz/aws"
-	"github.com/crowdmob/goamz/dynamodb"
+	"github.com/mattbaird/elastigo/lib"
+
 	"github.com/gorilla/mux"
 	influxdb "github.com/influxdb/influxdb/client"
 )
@@ -36,23 +35,16 @@ func ensureDatabase(client *influxdb.Client, database string) error {
 	return nil
 }
 
-func seedSearcher(src tags.Store, searcher tags.Searcher) error {
-	series, err := src.Scan()
-	if err != nil {
-		return err
-	}
-	for s := range series {
-		searcher.Insert(s.SeriesID, s.Tags)
-	}
-	return nil
-}
-
 func main() {
 	bind := flag.String("http", DefaultHttp, "Http bind address")
+
 	influxHost := flag.String("influx-host", "localhost:8086", "InfluxDB host")
 	influxUser := flag.String("influx-user", "root", "InfluxDB username")
 	influxPass := flag.String("influx-pass", "root", "InfluxDB password")
 	influxDatabase := flag.String("influx-db", "aion", "InfluxDB database")
+
+	elastisearchHost := flag.String("elastisearch-host", "localhost", "elastisearch host")
+
 	flag.Parse()
 
 	influxConfig := influxdb.ClientConfig{
@@ -72,47 +64,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// TODO: load from env
-	auth, err := aws.EnvAuth()
-	if err != nil {
-		log.Fatal(err)
-	}
-	server := &dynamodb.Server{
-		Auth:   auth,
-		Region: aws.Region{Name: "localhost", DynamoDBEndpoint: "http://localhost:8000"},
-	}
-	table := dynamodb.Table{
-		Server: server,
-		Name:   "aion",
-		Key: dynamodb.PrimaryKey{
-			KeyAttribute: &dynamodb.Attribute{
-				Type: dynamodb.TYPE_STRING,
-				Name: "series",
-			},
-			RangeAttribute: nil,
-		},
-	}
+	metastore := &elastisearch.Metastore{Connection: elastigo.NewConn(), IndexName: "aion"}
+	metastore.Connection.Domain = *elastisearchHost
 
 	ctx := Context{
 		Influx:       influxClient,
 		InfluxConfig: &influxConfig,
 		// TODO: load this from environment
-		TagStore:           &aiondynamodb.TagStore{table},
-		TagSearcher:        nil,
+		MetaStore:          metastore,
+		MetaSearcher:       metastore,
 		StoredAggregations: []string{"min", "max", "mean", "count"},
 		RollupPeriods:      []string{"1m"},
-	}
-
-	err = seedSearcher(ctx.TagStore, ctx.TagSearcher)
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	router := mux.NewRouter()
 	rv1 := router.PathPrefix("/v1").Subrouter()
 	rv1.HandleFunc("/series", ctx.CreateSeries).Methods("POST")
-	rv1.HandleFunc("/series", ctx.SeriesQuery).Methods("GET")
-	rv1.HandleFunc("/series/{id:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}/tags", ctx.TagQuery).Methods("GET")
 	rv1.HandleFunc("/datapoints", ctx.DatapointsQuery).Methods("GET")
 
 	n := negroni.Classic()
