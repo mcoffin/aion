@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/FlukeNetworks/aion/elastisearch"
 	"github.com/codegangsta/negroni"
@@ -35,8 +38,14 @@ func ensureDatabase(client *influxdb.Client, database string) error {
 	return nil
 }
 
+type config struct {
+	StoredAggregations []string `json:"stored-aggregations"`
+	RollupPeriods      []string `json:"rollup-periods"`
+}
+
 func main() {
 	bind := flag.String("http", DefaultHttp, "Http bind address")
+	configFile := flag.String("config", "config.json", "Config file")
 
 	influxHost := flag.String("influx-host", "localhost:8086", "InfluxDB host")
 	influxUser := flag.String("influx-user", "root", "InfluxDB username")
@@ -67,14 +76,26 @@ func main() {
 	metastore := &elastisearch.Metastore{Connection: elastigo.NewConn(), IndexName: "aion"}
 	metastore.Connection.Domain = *elastisearchHost
 
+	var cfg config
+	configReader, err := os.Open(*configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	configDec := json.NewDecoder(configReader)
+	err = configDec.Decode(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Using config: %+v\n", cfg)
+
 	ctx := Context{
-		Influx:       influxClient,
-		InfluxConfig: &influxConfig,
-		// TODO: load this from environment
+		Influx:             influxClient,
+		InfluxConfig:       &influxConfig,
 		MetaStore:          metastore,
 		MetaSearcher:       metastore,
-		StoredAggregations: []string{"min", "max", "mean", "count"},
-		RollupPeriods:      []string{"1m"},
+		StoredAggregations: cfg.StoredAggregations,
+		RollupPeriods:      cfg.RollupPeriods,
 	}
 
 	router := mux.NewRouter()

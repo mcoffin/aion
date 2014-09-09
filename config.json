@@ -1,0 +1,4 @@
+{
+	"stored-aggregations": ["min", "max", "mean", "count"],
+	"rollup-periods": ["1m"]
+}
