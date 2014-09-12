@@ -1,0 +1,9 @@
+stored-aggregations = ["min", "max", "mean", "count"]
+
+[[rollup]]
+
+period = "1m"
+bucket-duration = "60m"
+retention-policy = "inf"
+shard-duration = "7d"
+replication-factor = 1

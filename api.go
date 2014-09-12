@@ -53,7 +53,7 @@ func (self Context) constructRollupQuery(series uuid.UUID, rollups []string, per
 
 func (self Context) CreateSeries(res http.ResponseWriter, req *http.Request) {
 	series := uuid.NewRandom()
-	out := map[string]string{"id": series.String()}
+	out := map[string]string{"id": seriesName(series)}
 	outData, err := json.Marshal(out)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
