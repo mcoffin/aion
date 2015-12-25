@@ -5,8 +5,31 @@ import org.glassfish.jersey.server.ResourceConfig
 import scala.collection.JavaConversions._
 
 class Application extends ResourceConfig {
+  import com.fasterxml.jackson.databind.ObjectMapper
+  import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
-  import com.typesafe.config.ConfigFactory
+  import com.netscout.aion2.source.CassandraDataSource
+  import com.typesafe.config.{ConfigException, ConfigFactory}
+
+  val config = ConfigFactory.load()
+
+  val schemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
+  val dataSource = new CassandraDataSource(getOptionalConfig("com.netscout.aion2.dataSource"))
+
+  // Initialize Jackson for JSON parsing
+  val mapper = new ObjectMapper()
+  mapper.registerModule(DefaultScalaModule)
+
+  /**
+   * Gets an optional configuration value
+   */
+  def getOptionalConfig(key: String) = {
+    try {
+      Some(config.getConfig(key))
+    } catch {
+      case (e: ConfigException.Missing) => None
+    }
+  }
 
   implicit class AionIndexResource(val index: AionIndexConfig) {
     /**
@@ -32,7 +55,7 @@ class Application extends ResourceConfig {
       val resourceBuilder = Resource.builder()
       resourceBuilder.path(index.resourcePath)
 
-      resourceBuilder.addMethod("GET").produces("text/plain").handledBy(new Inflector[ContainerRequestContext, String] {
+      resourceBuilder.addMethod("GET").produces("application/json").handledBy(new Inflector[ContainerRequestContext, String] {
         val splitStrategy = index.split.strategy.strategy
 
         override def apply(request: ContainerRequestContext) = {
@@ -40,16 +63,13 @@ class Application extends ResourceConfig {
           val queryParameters = info.getQueryParameters
 
           val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
-          s"minimum: ${queryStrategy.minimum}\nmaximum: ${queryStrategy.maximum}\npartialRows: ${queryStrategy.partialRows}\nfullRows: ${queryStrategy.fullRows}"
+          val results = dataSource.executeQuery(obj, index, queryStrategy)
+          mapper writeValueAsString results
         }
       })
       resourceBuilder.build()
     })
   }
-
-  val config = ConfigFactory.load()
-
-  val schemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
 
   val resources = {
     val schemata = schemaProviders.map(_.schema).reduce(_++_)

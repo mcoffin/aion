@@ -10,8 +10,6 @@ repositories {
     jcenter()
 }
 
-def scalaVersion = "2.11"
-
 dependencies {
     compile "org.scala-lang:scala-library:${scalaVersion}.+"
     compile "com.iheart:ficus_${scalaVersion}:1.2+"
@@ -20,6 +18,9 @@ dependencies {
     compile "org.glassfish.jersey.containers:jersey-container-servlet:2+"
     compile "org.joda:joda-convert:1.8+"
     compile "joda-time:joda-time:2.9+"
+    compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
 }
 
 compileScala {
@@ -27,3 +28,5 @@ compileScala {
 }
 
 jettyRunWar.contextPath = "/"
+
+version = "0.1.0"
