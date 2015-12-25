@@ -10,7 +10,7 @@ case class AionObjectConfig (
 case class AionIndexConfig (
   name: String,
   partition: Seq[String],
-  split: Seq[AionSplitKeyConfig],
+  split: AionSplitKeyConfig,
   range: Seq[String],
   clustering: AionClusteringConfig
 )
@@ -23,7 +23,11 @@ case class AionSplitKeyConfig (
 case class AionSplitStrategyConfig (
   name: String,
   config: Option[Config]
-)
+) {
+  import com.netscout.aion2.split.SplitStrategies
+
+  def strategy = SplitStrategies.createStrategy(name, config)
+}
 
 case class AionClusteringConfig (
   field: String,

@@ -16,17 +16,15 @@
                         "pulse",
                         "test"
                     ],
-                    "split": [
-                        {
-                            "column": "time",
-                            "strategy": {
-                                "name": "duration",
-                                "config": {
-                                    "duration": "1M"
-                                }
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P7D"
                             }
                         }
-                    ],
+                    },
                     "range": [],
                     "clustering": {
                         "field": "time",
@@ -55,17 +53,15 @@
                         "pulse",
                         "test"
                     ],
-                    "split": [
-                        {
-                            "column": "time",
-                            "strategy": {
-                                "name": "duration",
-                                "config": {
-                                    "duration": "1M"
-                                }
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P30D"
                             }
                         }
-                    ],
+                    },
                     "range": [
                         "granularity"
                     ],
@@ -87,17 +83,15 @@
                 {
                     "name": "redstone_defect_stats",
                     "partition": [],
-                    "split": [
-                        {
-                            "column": "time",
-                            "strategy": {
-                                "name": "duration",
-                                "config": {
-                                    "duration": "1M"
-                                }
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P7D"
                             }
                         }
-                    ],
+                    },
                     "range": [],
                     "clustering": {
                         "field": "time",

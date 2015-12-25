@@ -18,6 +18,8 @@ dependencies {
     compile "javax.ws.rs:javax.ws.rs-api:2+"
     compile "org.eclipse.jetty.aggregate:jetty-all:9+"
     compile "org.glassfish.jersey.containers:jersey-container-servlet:2+"
+    compile "org.joda:joda-convert:1.8+"
+    compile "joda-time:joda-time:2.9+"
 }
 
 compileScala {

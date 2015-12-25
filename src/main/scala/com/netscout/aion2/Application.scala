@@ -2,6 +2,8 @@ package com.netscout.aion2
 
 import org.glassfish.jersey.server.ResourceConfig
 
+import scala.collection.JavaConversions._
+
 class Application extends ResourceConfig {
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.typesafe.config.ConfigFactory
@@ -31,10 +33,14 @@ class Application extends ResourceConfig {
       resourceBuilder.path(index.resourcePath)
 
       resourceBuilder.addMethod("GET").produces("text/plain").handledBy(new Inflector[ContainerRequestContext, String] {
+        val splitStrategy = index.split.strategy.strategy
+
         override def apply(request: ContainerRequestContext) = {
-          // TODO: parse desired range
-          // TODO: get data from data source
-          "TODO"
+          val info = request.getUriInfo
+          val queryParameters = info.getQueryParameters
+
+          val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
+          s"minimum: ${queryStrategy.minimum}\nmaximum: ${queryStrategy.maximum}\npartialRows: ${queryStrategy.partialRows}\nfullRows: ${queryStrategy.fullRows}"
         }
       })
       resourceBuilder.build()
