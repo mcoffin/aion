@@ -91,7 +91,41 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
 
   it should "round the start time down to row time" in {
     val uut = new DurationSplitStrategy(Some(config("P7D")))
-    val strategy = uut.strategyForQuery(query(Instant.EPOCH.plus(1, DAYS), Instant.EPOCH.plus(3, DAYS)))
+    val realStart = Instant.EPOCH.plus(1, DAYS)
+    val strategy = uut.strategyForQuery(query(realStart, realStart.plus(2, DAYS)))
     strategy.partialRows.head should equal (new Date(0))
+  }
+
+  it should "round the end time down to row time" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val realStart = Instant.EPOCH.plus(1, DAYS)
+    val strategy = uut.strategyForQuery(query(realStart, realStart.plus(7, DAYS)))
+    val rowEnd = Instant.EPOCH.plus(7, DAYS)
+    strategy.partialRows.last should equal (new Date(rowEnd.toEpochMilli))
+  }
+
+  it should "preserve the originally requested range in 'minimum' and 'maximum'" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val realStart = Instant.EPOCH.plus(1, DAYS)
+    val realEnd = realStart.plus(14, DAYS)
+    val strategy = uut.strategyForQuery(query(realStart, realEnd))
+    strategy.partialRows.head should equal (new Date(0))
+    val fullRowDate = new Date(Instant.EPOCH.plus(7, DAYS).toEpochMilli)
+    strategy.fullRows should equal (Some((fullRowDate, fullRowDate)))
+    strategy.minimum shouldEqual realStart
+    strategy.maximum shouldEqual realEnd
+  }
+
+  it should "return a range of fullRows when data spans 4+ rows" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val realStart = Instant.EPOCH.plus(1, DAYS)
+    val realEnd = realStart.plus(7*4, DAYS)
+    val strategy = uut.strategyForQuery(query(realStart, realEnd))
+
+    val firstFullRow = new Date(Instant.EPOCH.plus(7, DAYS).toEpochMilli)
+    val lastFullRow = new Date(Instant.EPOCH.plus(3*7, DAYS).toEpochMilli)
+
+    strategy.partialRows.size shouldBe 2
+    strategy.fullRows shouldEqual Some((firstFullRow, lastFullRow))
   }
 }
