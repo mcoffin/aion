@@ -5,14 +5,12 @@ import com.netscout.aion2.except.IllegalQueryException
 import com.netscout.aion2.model.QueryStrategy
 import com.typesafe.config.Config
 
-import java.time.Duration
+import java.time.{Duration, Instant}
 import java.util.Date
 
 import javax.ws.rs.core.MultivaluedMap
 
 import net.ceedubs.ficus.Ficus._
-
-import org.joda.time.DateTime
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -28,49 +26,66 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
   }
 
   class RangeQueryStrategy (
-    val fromDate: DateTime,
-    val toDate: DateTime
+    val fromDate: Instant,
+    val toDate: Instant
   ) extends QueryStrategy {
-    override def minimum = fromDate.toDate
-    override def maximum = toDate.toDate
+    import scala.language.implicitConversions
+
+    implicit def instantToDate(i: Instant) = new Date(i.toEpochMilli)
+
+    override def minimum = fromDate
+    override def maximum = toDate
 
     private def durTime = duration.getSeconds
 
     private def minRow = {
-      val minTime = fromDate.toDate.getTime / 1000
-      new Date((minTime - (minTime % durTime)) * 1000)
+      val minTime = fromDate.getEpochSecond
+      val minRowTime = minTime - (minTime % durTime)
+      Instant.EPOCH.plusSeconds(minRowTime)
     }
 
     private def maxRow = {
-      val maxTime = toDate.toDate.getTime / 1000
-      new Date((maxTime - (maxTime % durTime)) * 1000)
+      val maxTime = toDate.getEpochSecond
+      val maxRowTime = maxTime - (maxTime % durTime)
+      Instant.EPOCH.plusSeconds(maxRowTime)
     }
 
     override def fullRows = {
-      val maxTime = toDate.toDate.getTime / 1000
-      val minTime = fromDate.toDate.getTime / 1000
+      import java.time.temporal.ChronoUnit._
 
-      if (maxTime - minTime < durTime) {
+      if (fromDate.until(toDate, SECONDS) < durTime) {
         None
       } else {
-        val min = new Date((minRow.getTime / 1000) + durTime)
-        val max = new Date((maxRow.getTime / 1000) - durTime)
-        Some((minTime.asInstanceOf[Object], maxTime.asInstanceOf[Object]))
+        val min = minRow.plus(duration)
+        val max = maxRow.minus(duration)
+        if (max.isBefore(min)) {
+          None
+        } else {
+          val minDate: Date = min
+          val maxDate: Date = max
+          Some((minDate.asInstanceOf[Object], maxDate.asInstanceOf[Object]))
+        }
       }
     }
 
-    override def partialRows = Seq(minRow, maxRow)
+    override def partialRows = {
+      if (minRow.equals(maxRow)) {
+        Seq(minRow)
+      } else {
+        Seq(minRow, maxRow)
+      }
+    }
   }
 
   override def strategyForQuery(params: MultivaluedMap[String, String]) = {
-    var fromDate: DateTime = null
-    var toDate: DateTime = null
+    var fromDate: Instant = null
+    var toDate: Instant = null
     try {
-      fromDate = DateTime.parse(params.get("from").get(0) match {
+      fromDate = Instant.parse(params.get("from").get(0) match {
         case null => throw new IllegalQueryException("\'from\' parameter must be supplied", null)
         case x => x
       })
-      toDate = DateTime.parse(params.get("to").get(0) match {
+      toDate = Instant.parse(params.get("to").get(0) match {
         case null => throw new IllegalQueryException("\'to\' parameter must be supplied", null)
         case x => x
       })
@@ -84,6 +99,10 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
       case (e: Exception) => {
         throw new IllegalQueryException("", e)
       }
+    }
+
+    if (toDate.isBefore(fromDate)) {
+      throw new IllegalQueryException("\'from\' date must be before \'to\' date", null)
     }
 
     new RangeQueryStrategy(fromDate, toDate)
