@@ -2,7 +2,7 @@ package com.netscout.aion2.split
 
 import com.netscout.aion2.SplitStrategy
 import com.netscout.aion2.except.IllegalQueryException
-import com.netscout.aion2.model.QueryStrategy
+import com.netscout.aion2.model.{QueryStrategy, EmptyQueryStrategy}
 import com.typesafe.config.Config
 
 import java.time.{Duration, Instant}
@@ -69,15 +69,18 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
     }
 
     override def partialRows = {
+      val minDate: Date = minRow
+      val maxDate: Date = maxRow
+
       if (minRow.equals(maxRow)) {
-        Seq(minRow)
+        Seq(minDate)
       } else {
-        Seq(minRow, maxRow)
+        Seq(minDate, maxDate)
       }
     }
   }
 
-  override def strategyForQuery(params: MultivaluedMap[String, String]) = {
+  override def strategyForQuery(params: MultivaluedMap[String, String]): QueryStrategy = {
     var fromDate: Instant = null
     var toDate: Instant = null
     try {
@@ -101,6 +104,12 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
       }
     }
 
+    // If the dates are equal, we get to terminate early, because no data will be queried
+    if (toDate.equals(fromDate)) {
+      return EmptyQueryStrategy
+    }
+
+    // If the ordering of the dates is messed up, the query is impossible to perform
     if (toDate.isBefore(fromDate)) {
       throw new IllegalQueryException("\'from\' date must be before \'to\' date", null)
     }

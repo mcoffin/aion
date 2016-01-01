@@ -1,7 +1,10 @@
 package com.netscout.aion2.split
 
+import com.netscout.aion2.except.IllegalQueryException
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit._
+import java.util.Date
 
 import javax.ws.rs.core.{MultivaluedHashMap, MultivaluedMap}
 
@@ -53,5 +56,42 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val strategy = uut.strategyForQuery(query(Instant.EPOCH.plus(1, DAYS), Instant.EPOCH.plus(14, DAYS)))
     strategy.fullRows should not be (None)
     strategy.partialRows.size should be (2)
+  }
+
+  it should "throw IllegalQueryException when parameters are missing" in {
+    val uut = new DurationSplitStrategy(Some(config("P30D")))
+    a [IllegalQueryException] should be thrownBy {
+      uut.strategyForQuery(new MultivaluedHashMap[String, String]())
+    }
+  }
+
+  it should "throw IllegalQueryException when parameters aren't dates" in {
+    val uut = new DurationSplitStrategy(Some(config("P30D")))
+    val paramMap = new MultivaluedHashMap[String, String](2)
+    paramMap.add("from", "foo")
+    paramMap.add("to", "bar")
+    a [IllegalQueryException] should be thrownBy {
+      uut.strategyForQuery(paramMap)
+    }
+  }
+
+  it should "throw IllegalQueryException when 'from' is after 'to'" in {
+    val uut = new DurationSplitStrategy(Some(config("P30D")))
+    a [IllegalQueryException] should be thrownBy {
+      uut.strategyForQuery(query(Instant.EPOCH.plus(1, DAYS), Instant.EPOCH))
+    }
+  }
+
+  it should "return an empty query for an empty range" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val strategy = uut.strategyForQuery(query(Instant.EPOCH, Instant.EPOCH))
+    strategy.fullRows shouldBe None
+    strategy.partialRows.size should be (0)
+  }
+
+  it should "round the start time down to row time" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val strategy = uut.strategyForQuery(query(Instant.EPOCH.plus(1, DAYS), Instant.EPOCH.plus(3, DAYS)))
+    strategy.partialRows.head should equal (new Date(0))
   }
 }
