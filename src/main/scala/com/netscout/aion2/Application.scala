@@ -1,20 +1,22 @@
 package com.netscout.aion2
 
+import com.typesafe.config.{Config, ConfigFactory}
+
 import org.glassfish.jersey.server.ResourceConfig
 
 import scala.collection.JavaConversions._
 
-class Application extends ResourceConfig {
+class ApplicationWrapper extends Application(ConfigFactory.load())
+
+class Application(val config: Config) extends ResourceConfig {
   import com.fasterxml.jackson.databind.ObjectMapper
   import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
-  import com.typesafe.config.{ConfigException, ConfigFactory}
-
-  val config = ConfigFactory.load()
+  import com.typesafe.config.ConfigException
 
   val schemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
-  val dataSource = new CassandraDataSource(getOptionalConfig("com.netscout.aion2.dataSource"))
+  val dataSource = new CassandraDataSource(getOptionalConfig("dataSource"))
 
   // Initialize Jackson for JSON parsing
   val mapper = new ObjectMapper()
@@ -23,12 +25,20 @@ class Application extends ResourceConfig {
   /**
    * Gets an optional configuration value
    */
-  def getOptionalConfig(key: String) = {
+  private[aion2] def getOptionalConfig(key: String) = {
     try {
-      Some(config.getConfig(key))
+      Some(config.getConfig(getConfigKey(key)))
     } catch {
       case (e: ConfigException.Missing) => None
     }
+  }
+
+  /**
+   * Prepends the configuration prefix to the key to produce a
+   * fully pathed configuration key
+   */
+  private[aion2] def getConfigKey(key: String) = {
+    "com.netscout.aion2." ++ key
   }
 
   implicit class AionIndexResource(val index: AionIndexConfig) {
@@ -52,6 +62,8 @@ class Application extends ResourceConfig {
       import org.glassfish.jersey.process.Inflector
       import org.glassfish.jersey.server.model.Resource
 
+      // Jersey provides a programmatic API for building JAX-RS resources
+      // @see [[org.glassfish.jersey.server.model.Resource.Builder
       val resourceBuilder = Resource.builder()
       resourceBuilder.path(index.resourcePath)
 
@@ -72,9 +84,20 @@ class Application extends ResourceConfig {
   }
 
   val resources = {
+    import org.glassfish.jersey.server.model.Resource
+
+    // Combine all the schemas from all the schema providers
     val schemata = schemaProviders.map(_.schema).reduce(_++_)
-    schemata.map(_.resources).reduce(_++_).toArray
+
+    // Combine all the resouces from all of the schemata
+    val resources = schemata.map(_.resources)
+    if (resources.size > 0) {
+      resources.reduce(_++_).toArray
+    } else {
+      Array[Resource]()
+    }
   }
 
+  // Register all the generated resources with this JAX-RS application
   registerResources(resources : _*)
 }

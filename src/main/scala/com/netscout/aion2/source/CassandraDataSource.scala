@@ -6,7 +6,7 @@ import com.typesafe.config.{Config, ConfigException}
 class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   val config = cfg match {
     case Some(x) => x
-    case None => throw new ConfigException.Missing(s"dataSource")
+    case None => throw new Exception("Missing dataSource configuration for CassandraDataSource")
   }
 
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy) = {

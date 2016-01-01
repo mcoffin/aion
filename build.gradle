@@ -3,12 +3,15 @@ plugins {
     id "scala"
     id "jetty"
     id "war"
+    id "com.github.maiflai.scalatest" version "0.11"
 }
 
 repositories {
     mavenCentral()
     jcenter()
 }
+
+version = "0.1.0"
 
 dependencies {
     compile "org.scala-lang:scala-library:${scalaVersion}.+"
@@ -21,12 +24,19 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
+
+    // Test-only dependencies
+    testCompile "org.scalatest:scalatest_${scalaVersion}:2+"
+
+    testRuntime "org.pegdown:pegdown:+"
 }
 
 compileScala {
     scalaCompileOptions.additionalParameters = ["-feature"]
 }
 
+// By default, the jetty plugin would run the servlet under the path
+// "/aion2", whereas since this will most often be deployed as a standalone
+// application rather than part of a webapp, the default is to run this servlet
+// at the root of the server
 jettyRunWar.contextPath = "/"
-
-version = "0.1.0"
