@@ -52,6 +52,9 @@ class Application(val config: Config) extends ResourceConfig {
   }
 
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
+    import javax.ws.rs.core.{Response, StreamingOutput}
+    import javax.ws.rs.core.MediaType._
+
     /**
      * Dynamically creates JAX-RS resources for a given Aion object description
      *
@@ -67,7 +70,7 @@ class Application(val config: Config) extends ResourceConfig {
       val resourceBuilder = Resource.builder()
       resourceBuilder.path(index.resourcePath)
 
-      resourceBuilder.addMethod("GET").produces("application/json").handledBy(new Inflector[ContainerRequestContext, String] {
+      resourceBuilder.addMethod("GET").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
         val splitStrategy = index.split.strategy.strategy
 
         override def apply(request: ContainerRequestContext) = {
@@ -76,7 +79,14 @@ class Application(val config: Config) extends ResourceConfig {
 
           val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
           val results = dataSource.executeQuery(obj, index, queryStrategy)
-          mapper writeValueAsString results
+          val stream = new StreamingOutput() {
+            import java.io.OutputStream
+
+            override def write(output: OutputStream) {
+              mapper.writeValue(output, results)
+            }
+          }
+          Response.ok(stream).build()
         }
       })
       resourceBuilder.build()
