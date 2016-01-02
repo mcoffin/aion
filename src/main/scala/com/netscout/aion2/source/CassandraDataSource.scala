@@ -41,8 +41,8 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     val whereClauses = partitionClauses ++ rangeClauses
 
     val selectedFields = obj.fields.keys.map(f => {
-      if (obj.fields.get(f).equals("timeuuid")) {
-        f
+      if (obj.fields.get(f).equals(Some("timeuuid"))) {
+        s"system.dateOf(${f})"
       } else {
         f
       }

@@ -79,12 +79,12 @@ class Application(val config: Config) extends ResourceConfig {
 
           val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
 
-          val results = dataSource.executeQuery(obj, index, queryStrategy, info.getPathParameters.mapValues(_.head).toMap)
+          val results = dataSource.executeQuery(obj, index, queryStrategy, info.getPathParameters.mapValues(_.head).toMap).map(_.toMap)
           val stream = new StreamingOutput() {
             import java.io.OutputStream
 
             override def write(output: OutputStream) {
-              mapper.writeValue(output, Map("count" -> results.size))
+              mapper.writeValue(output, results)
             }
           }
           Response.ok(stream).build()
