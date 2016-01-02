@@ -1,4 +1,13 @@
 {
+    "com": {
+        "netscout": {
+            "aion2": {
+                "dataSource": {
+                    "contactPoints": ["127.0.0.1"]
+                }
+            }
+        }
+    },
     "objects": [
         {
             "fields": {
@@ -21,7 +30,7 @@
                         "strategy": {
                             "name": "duration",
                             "config": {
-                                "duration": "P7D"
+                                "duration": "P1D"
                             }
                         }
                     },

@@ -31,10 +31,10 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
   ) extends QueryStrategy {
     import scala.language.implicitConversions
 
-    implicit def instantToDate(i: Instant) = new Date(i.toEpochMilli)
+    implicit def instantToDate(i: Instant) = Date.from(i)
 
-    override def minimum = fromDate
-    override def maximum = toDate
+    override def minimum: Date = fromDate
+    override def maximum: Date = toDate
 
     private def durTime = duration.getSeconds
 

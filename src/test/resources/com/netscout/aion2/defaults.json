@@ -2,7 +2,9 @@
     "com": {
         "netscout": {
             "aion2": {
-                "dataSource": {}
+                "dataSource": {
+                    "contactPoints": ["127.0.0.1"]
+                }
             }
         }
     },

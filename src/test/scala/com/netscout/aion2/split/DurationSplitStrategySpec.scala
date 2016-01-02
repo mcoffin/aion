@@ -112,8 +112,8 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     strategy.partialRows.head should equal (new Date(0))
     val fullRowDate = new Date(Instant.EPOCH.plus(7, DAYS).toEpochMilli)
     strategy.fullRows should equal (Some((fullRowDate, fullRowDate)))
-    strategy.minimum shouldEqual realStart
-    strategy.maximum shouldEqual realEnd
+    strategy.minimum shouldEqual (new Date(realStart.toEpochMilli))
+    strategy.maximum shouldEqual (new Date(realEnd.toEpochMilli))
   }
 
   it should "return a range of fullRows when data spans 4+ rows" in {

@@ -22,6 +22,7 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
+    compile "com.datastax.cassandra:cassandra-driver-core:3+"
 
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"
