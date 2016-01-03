@@ -140,4 +140,12 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val realTime = Instant.EPOCH.plus(7, DAYS)
     uut.rowKey(realTime) shouldEqual Date.from(realTime)
   }
+
+  it should "throw IllegalQueryException when a non-date is passed to rowKey" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val somethingNotADate = "foo"
+    a [IllegalQueryException] should be thrownBy {
+      uut.rowKey(somethingNotADate)
+    }
+  }
 }

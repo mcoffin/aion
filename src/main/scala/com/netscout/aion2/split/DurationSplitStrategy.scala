@@ -86,6 +86,7 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
     val inputInstant: Instant = obj match {
       case x: Instant => x
       case x: Date => x
+      case _ => throw new IllegalQueryException(s"Value of type ${obj.getClass.getName} cannot be used as a value for DurationSplitStrategy")
     }
     val outputDate: Date = roundInstant(inputInstant)
     outputDate
