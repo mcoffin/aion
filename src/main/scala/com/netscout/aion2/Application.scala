@@ -15,8 +15,8 @@ class Application(val config: Config) extends ResourceConfig {
   import com.netscout.aion2.source.CassandraDataSource
   import com.typesafe.config.ConfigException
 
-  val schemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
-  val dataSource = new CassandraDataSource(getOptionalConfig("dataSource"))
+  val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
+  var dataSource = new CassandraDataSource(getOptionalConfig("dataSource"))
 
   // Initialize Jackson for JSON parsing
   val mapper = new ObjectMapper()
@@ -94,21 +94,21 @@ class Application(val config: Config) extends ResourceConfig {
     })
   }
 
-  val resources = {
-    import org.glassfish.jersey.server.model.Resource
+  /**
+   * Registers resources associated with the given schema provider
+   *
+   * @param schemaProvider the schema provider to register
+   */
+  def registerSchemaProvider(schemaProvider: SchemaProvider) {
+    val schemata = schemaProvider.schema
+    val resourceLists = schemata.map(_.resources)
 
-    // Combine all the schemas from all the schema providers
-    val schemata = schemaProviders.map(_.schema).reduce(_++_)
-
-    // Combine all the resouces from all of the schemata
-    val resources = schemata.map(_.resources)
-    if (resources.size > 0) {
-      resources.reduce(_++_).toArray
-    } else {
-      Array[Resource]()
+    // If we have 0 resources, reduce() will cause an error
+    if (resourceLists.size > 0) {
+      registerResources(resourceLists.reduce(_++_))
     }
   }
 
-  // Register all the generated resources with this JAX-RS application
-  registerResources(resources : _*)
+  // This registers all the resources found by the default schema providers
+  builtinSchemaProviders.foreach(registerSchemaProvider(_))
 }
