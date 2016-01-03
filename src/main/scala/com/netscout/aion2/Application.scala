@@ -1,5 +1,6 @@
 package com.netscout.aion2
 
+import com.netscout.aion2.except._
 import com.typesafe.config.{Config, ConfigFactory}
 
 import org.glassfish.jersey.server.ResourceConfig
@@ -43,12 +44,17 @@ class Application(val config: Config) extends ResourceConfig {
 
   implicit class AionIndexResource(val index: AionIndexConfig) {
     /**
-     * Gets the path for the JAX-RS resource for this index
+     * Gets the path for the element JAX-RS resources for this index
      */
     def resourcePath = {
       val partitionPathKeys = index.partition.map(p => s"{$p}")
       (Seq(index.name) ++ partitionPathKeys) mkString "/"
     }
+
+    /**
+     * Gets a path for the root JAX-RS resource for this index
+     */
+    def indexPath = s"/${index.name}"
   }
 
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
@@ -65,14 +71,14 @@ class Application(val config: Config) extends ResourceConfig {
       import org.glassfish.jersey.process.Inflector
       import org.glassfish.jersey.server.model.Resource
 
+      val splitStrategy = index.split.strategy.strategy
+
       // Jersey provides a programmatic API for building JAX-RS resources
       // @see [[org.glassfish.jersey.server.model.Resource.Builder
       val resourceBuilder = Resource.builder()
       resourceBuilder.path(index.resourcePath)
 
       resourceBuilder.addMethod("GET").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
-        val splitStrategy = index.split.strategy.strategy
-
         override def apply(request: ContainerRequestContext) = {
           val info = request.getUriInfo
           val queryParameters = info.getQueryParameters
@@ -90,8 +96,35 @@ class Application(val config: Config) extends ResourceConfig {
           Response.ok(stream).build()
         }
       })
-      resourceBuilder.build()
-    })
+
+      val indexResourceBuilder = Resource.builder()
+      indexResourceBuilder.path(index.indexPath)
+
+      indexResourceBuilder.addMethod("POST").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
+        override def apply(request: ContainerRequestContext) = {
+          import com.fasterxml.jackson.databind.JsonMappingException
+          import javax.ws.rs.core.Response.Status._
+
+          try {
+            val values = mapper.readValue(request.getEntityStream, classOf[java.util.Map[String, Object]]).toMap
+            val maybeSplitKeyValue = for {
+              realValue <- values.get(index.split.column)
+              roundedValue <- Some(splitStrategy.rowKey(realValue))
+            } yield roundedValue
+            val splitKeyValue = maybeSplitKeyValue match {
+              case Some(x) => x
+              case None => throw new IllegalQueryException("The split key value must be present for an insert")
+            }
+            dataSource.insertQuery(obj, index, values, splitKeyValue)
+            Response.status(CREATED).build()
+          } catch {
+            case (jme: JsonMappingException) => throw new IllegalQueryException("Error parsing JSON input", jme)
+          }
+        }
+      })
+
+      Set(resourceBuilder.build(), indexResourceBuilder.build())
+    }).reduce(_++_)
   }
 
   /**
