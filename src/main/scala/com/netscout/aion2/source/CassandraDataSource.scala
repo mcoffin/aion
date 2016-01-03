@@ -59,11 +59,14 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
    */
   private def splitRowKey(columnName: String) = s"${columnName}_row"
 
-  override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef]) {
+  override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef], splitKeyValue: Option[AnyRef]) {
     import com.datastax.driver.core.querybuilder.QueryBuilder
 
+    // Add in the split key information to the values map
+    val fullValues = values ++ Map(splitRowKey(index.split.column) -> splitKeyValue)
+
     val insertStmt = QueryBuilder.insertInto(keyspaceName, index.name)
-      .values(values.keys.toList, values.values.toList)
+      .values(fullValues.keys.toList, fullValues.values.toList)
     session.execute(insertStmt)
   }
 
