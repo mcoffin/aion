@@ -128,4 +128,16 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     strategy.partialRows.size shouldBe 2
     strategy.fullRows shouldEqual Some((firstFullRow, lastFullRow))
   }
+
+  it should "return a rounded row key for a time in the middle of a row" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val realTime = Instant.EPOCH.plus(8, DAYS)
+    uut.rowKey(realTime) shouldEqual Date.from(Instant.EPOCH.plus(7, DAYS))
+  }
+
+  it should "return a rounded row key for the exact start of a row" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val realTime = Instant.EPOCH.plus(7, DAYS)
+    uut.rowKey(realTime) shouldEqual Date.from(realTime)
+  }
 }
