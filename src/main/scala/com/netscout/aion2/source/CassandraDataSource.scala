@@ -22,6 +22,23 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
 
   lazy val session = cluster.connect()
 
+  /**
+   * Additional methods for AionObjectConfig used by
+   * [[com.netscout.aion2.source.CassandraDataSource]]
+   */
+  implicit class CassandraAionObject(val obj: AionObjectConfig) {
+    /**
+     * Gets the title of the row returned in a query for a given field name
+     */
+    def selectionOfField(field: String) = {
+      if (obj.fields.get(field).equals(Some("timeuuid"))) {
+        s"system.dateOf(${field})"
+      } else {
+        field
+      }
+    }
+  }
+
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
@@ -40,21 +57,16 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     val rangeClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${index.split.column}_row = ?")
     val whereClauses = partitionClauses ++ rangeClauses
 
-    val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f)).map(f => {
-      if (obj.fields.get(f).equals(Some("timeuuid"))) {
-        s"system.dateOf(${f})"
-      } else {
-        f
-      }
-    })
+    val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
+    val fieldSelections = selectedFields.map(obj.selectionOfField(_))
 
-    val minMaxStmtSelect = s"SELECT ${selectedFields mkString ", "} FROM aion.${index.name}"
+    val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM aion.${index.name}"
     val minMaxStmt = new BoundStatement(session.prepare(minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"))
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
     val partialQueries = query.partialRows.map(rowKey => minMaxStmt.bind(partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) : _*))
     val results = partialQueries.map(session.execute(_)).map(_.all).reduce(_++_)
     results.map(row => {
-      selectedFields.map(f => (f, row.getObject(f)))
+      selectedFields.map(f => (f, row.getObject(obj.selectionOfField(f))))
     })
   }
 }
