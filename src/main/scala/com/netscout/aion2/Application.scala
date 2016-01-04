@@ -143,6 +143,10 @@ class Application(val config: Config) extends ResourceConfig {
    */
   def registerSchemaProvider(schemaProvider: SchemaProvider) {
     val schemata = schemaProvider.schema
+
+    // Initialize the datasource with the new schema
+    dataSource.initializeSchema(schemata)
+
     val resourceLists = schemata.map(_.resources)
 
     // If we have 0 resources, reduce() will cause an error
