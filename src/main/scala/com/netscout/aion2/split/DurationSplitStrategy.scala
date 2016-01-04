@@ -15,6 +15,9 @@ import net.ceedubs.ficus.Ficus._
 import scala.concurrent.duration.FiniteDuration
 
 class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
+  import java.util.UUID
+  import scala.language.implicitConversions
+
   val cfg = maybeCfg match {
     case Some(x) => x
     case None => throw new Exception("Configuration must be supplied for a DurationSplitStrategy")
@@ -25,30 +28,35 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
     Duration.parse(durationStr)
   }
 
+  private def roundInstant(i: Instant) = {
+    val durTime = duration.getSeconds
+
+    val s = i.getEpochSecond
+    val roundedS = s - (s % durTime)
+    Instant.EPOCH.plusSeconds(roundedS)
+  }
+
+  implicit def instantToDate(i: Instant) = Date.from(i)
+  implicit def dateToInstant(d: Date) = d.toInstant
+  implicit def uuidToInstant(uuid: UUID): Instant = {
+    import com.datastax.driver.core.utils.UUIDs
+
+    new Date(UUIDs.unixTimestamp(uuid))
+  }
+
   class RangeQueryStrategy (
     val fromDate: Instant,
     val toDate: Instant
   ) extends QueryStrategy {
-    import scala.language.implicitConversions
-
-    implicit def instantToDate(i: Instant) = Date.from(i)
 
     override def minimum: Date = fromDate
     override def maximum: Date = toDate
 
     private def durTime = duration.getSeconds
 
-    private def minRow = {
-      val minTime = fromDate.getEpochSecond
-      val minRowTime = minTime - (minTime % durTime)
-      Instant.EPOCH.plusSeconds(minRowTime)
-    }
+    private def minRow = roundInstant(fromDate)
 
-    private def maxRow = {
-      val maxTime = toDate.getEpochSecond
-      val maxRowTime = maxTime - (maxTime % durTime)
-      Instant.EPOCH.plusSeconds(maxRowTime)
-    }
+    private def maxRow = roundInstant(toDate)
 
     override def fullRows = {
       import java.time.temporal.ChronoUnit._
@@ -78,6 +86,17 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
         Seq(minDate, maxDate)
       }
     }
+  }
+
+  override def rowKey(obj: Object) = {
+    val inputInstant: Instant = obj match {
+      case x: Instant => x
+      case x: Date => x
+      case uuid: UUID => uuid
+      case _ => throw new IllegalQueryException(s"Value of type ${obj.getClass.getName} cannot be used as a value for DurationSplitStrategy")
+    }
+    val outputDate: Date = roundInstant(inputInstant)
+    outputDate
   }
 
   override def strategyForQuery(params: MultivaluedMap[String, String]): QueryStrategy = {

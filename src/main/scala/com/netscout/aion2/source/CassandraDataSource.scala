@@ -11,6 +11,8 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   import net.ceedubs.ficus.readers.CollectionReaders._
   import scala.collection.JavaConversions._
 
+  val keyspaceName = "aion"
+
   val config = cfg match {
     case Some(x) => x
     case None => throw new Exception("Missing dataSource configuration for CassandraDataSource")
@@ -39,6 +41,59 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     }
   }
 
+  /**
+   * Additional methods for AionIndexConfig used by
+   * [[com.netscout.aion2.source.CassandraDataSource]]
+   */
+  implicit class CassandraAionIndex(val idx: AionIndexConfig) {
+    /**
+     * Gets the fully qualified column family name for the index
+     */
+    def columnFamilyName = s"${keyspaceName}.${idx.name}"
+  }
+
+  /**
+   * Gets the name of the split row key for a given column
+   *
+   * @param columnName the name of the split column
+   */
+  private def splitRowKey(columnName: String) = s"${columnName}_row"
+
+  override def classOfType(t: String) = {
+    import com.datastax.driver.core.DataType
+    import com.datastax.driver.core.DataType.Name._
+
+    val cqlType = DataType.Name.valueOf(t.toUpperCase)
+
+    cqlType match {
+      case ASCII => classOf[String]
+      case BIGINT => classOf[java.lang.Long]
+      case BLOB => classOf[java.nio.ByteBuffer]
+      case BOOLEAN => classOf[Boolean]
+      case COUNTER => classOf[Long]
+      case DECIMAL => classOf[java.math.BigDecimal]
+      case DOUBLE => classOf[Double]
+      case FLOAT => classOf[Float]
+      case INT => classOf[Int]
+      case TIMESTAMP => classOf[java.util.Date]
+      case TIMEUUID => classOf[java.util.UUID]
+      case UUID => classOf[java.util.UUID]
+      case TEXT => classOf[String]
+      case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+    }
+  }
+
+  override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef], splitKeyValue: AnyRef) {
+    import com.datastax.driver.core.querybuilder.QueryBuilder
+
+    // Add in the split key information to the values map
+    val fullValues = values ++ Map(splitRowKey(index.split.column) -> splitKeyValue)
+
+    val insertStmt = QueryBuilder.insertInto(keyspaceName, index.name)
+      .values(fullValues.keys.toList, fullValues.values.toList)
+    session.execute(insertStmt)
+  }
+
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
@@ -54,13 +109,13 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
       case _ => "?"
     }
 
-    val rangeClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${index.split.column}_row = ?")
+    val rangeClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${splitRowKey(index.split.column)} = ?")
     val whereClauses = partitionClauses ++ rangeClauses
 
     val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
     val fieldSelections = selectedFields.map(obj.selectionOfField(_))
 
-    val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM aion.${index.name}"
+    val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM ${index.columnFamilyName}"
     val minMaxStmt = new BoundStatement(session.prepare(minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"))
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
     val partialQueries = query.partialRows.map(rowKey => minMaxStmt.bind(partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) : _*))
