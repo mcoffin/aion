@@ -49,6 +49,8 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val strategy = uut.strategyForQuery(query(Instant.EPOCH.plus(1, DAYS), Instant.EPOCH.plus(8, DAYS)))
     strategy.fullRows should be (None)
     strategy.partialRows.size should be (2)
+    strategy.partialRows.head shouldEqual Date.from(Instant.EPOCH)
+    strategy.partialRows.last shouldEqual Date.from(Instant.EPOCH.plus(7, DAYS))
   }
 
   it should "return a fully featured 3-query strategy when data spans 3+ rows" in {
@@ -129,6 +131,15 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     strategy.partialRows.size shouldBe 2
     strategy.fullRows.get.head shouldEqual firstFullRow
     strategy.fullRows.get.last shouldEqual lastFullRow
+  }
+
+  it should "return no full rows for a query that hits 2 rows" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val startTime = Instant.EPOCH
+    val endTime = Instant.EPOCH.plus(7+6, DAYS)
+    val strategy = uut.strategyForQuery(query(startTime, endTime))
+    strategy.partialRows.size shouldBe 2
+    strategy.fullRows shouldBe None
   }
 
   it should "return a rounded row key for a time in the middle of a row" in {
