@@ -94,6 +94,8 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   }
 
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
+    import com.datastax.driver.core.Row
+
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
     val lowRangeSuffix = obj.fields.get(index.split.column) match {
@@ -118,20 +120,28 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     val minMaxStmt = new BoundStatement(session.prepare(minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"))
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
     val partialQueries = query.partialRows.map(rowKey => minMaxStmt.bind(partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) : _*))
-    val minMaxResults = partialQueries.map(session.execute(_)).map(_.all).reduce(_++_)
 
-    var middleStmt = QueryBuilder.select(selectedFields.toArray : _*)
-      .from(keyspaceName, index.name).where()
-    val middleWhereClauses = index.partition.map(p => {
-      val desiredValue = partitionKey.get(p).get
-      QueryBuilder.eq(p, desiredValue)
-    })
-    middleWhereClauses.foreach(c => {
-      middleStmt = middleStmt.and(c)
-    })
-    val middleResults = session.execute(middleStmt).all
+    // Now for the middle queries
+    val queries: Iterable[Statement] = query.fullRows match {
+      case Some(fullRows) => {
+        val middlePartitionClauses = index.partition.map(p => {
+          QueryBuilder.eq(p, partitionKey.get(p).get)
+        })
+        val middleQueries = fullRows.map(rowKey => {
+          var stmt = QueryBuilder.select(selectedFields.toArray : _*)
+            .from(keyspaceName, index.name)
+            .where(QueryBuilder.eq(splitRowKey(index.split.column), rowKey))
+          middlePartitionClauses.foreach(c => {
+            stmt = stmt.and(c)
+          })
+          stmt
+        })
+        partialQueries ++ middleQueries
+      }
+      case None => partialQueries
+    }
 
-    val results = minMaxResults ++ middleResults
+    val results = queries.map(session.execute(_)).map(_.all).reduce(_++_)
     results.map(row => {
       selectedFields.map(f => (f, row.getObject(obj.selectionOfField(f))))
     })

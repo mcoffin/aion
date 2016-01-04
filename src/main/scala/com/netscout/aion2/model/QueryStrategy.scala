@@ -19,5 +19,5 @@ trait QueryStrategy {
   /**
    * Rows from which to query ALL data
    */
-  def fullRows: Option[(Object, Object)]
+  def fullRows: Option[Iterable[Object]]
 }
