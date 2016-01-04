@@ -7,6 +7,7 @@ import com.typesafe.config.{Config, ConfigException}
 import net.ceedubs.ficus.Ficus._
 
 class CassandraDataSource(cfg: Option[Config]) extends DataSource {
+  import com.datastax.driver.core.querybuilder.QueryBuilder
   import net.ceedubs.ficus.readers.ArbitraryTypeReader._
   import net.ceedubs.ficus.readers.CollectionReaders._
   import scala.collection.JavaConversions._
@@ -84,8 +85,6 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   }
 
   override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef], splitKeyValue: AnyRef) {
-    import com.datastax.driver.core.querybuilder.QueryBuilder
-
     // Add in the split key information to the values map
     val fullValues = values ++ Map(splitRowKey(index.split.column) -> splitKeyValue)
 
@@ -95,6 +94,8 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   }
 
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
+    import com.datastax.driver.core.Row
+
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
     val lowRangeSuffix = obj.fields.get(index.split.column) match {
@@ -119,7 +120,28 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     val minMaxStmt = new BoundStatement(session.prepare(minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"))
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
     val partialQueries = query.partialRows.map(rowKey => minMaxStmt.bind(partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) : _*))
-    val results = partialQueries.map(session.execute(_)).map(_.all).reduce(_++_)
+
+    // Now for the middle queries
+    val queries: Iterable[Statement] = query.fullRows match {
+      case Some(fullRows) => {
+        val middlePartitionClauses = index.partition.map(p => {
+          QueryBuilder.eq(p, partitionKey.get(p).get)
+        })
+        val middleQueries = fullRows.map(rowKey => {
+          var stmt = QueryBuilder.select(selectedFields.toArray : _*)
+            .from(keyspaceName, index.name)
+            .where(QueryBuilder.eq(splitRowKey(index.split.column), rowKey))
+          middlePartitionClauses.foreach(c => {
+            stmt = stmt.and(c)
+          })
+          stmt
+        })
+        partialQueries ++ middleQueries
+      }
+      case None => partialQueries
+    }
+
+    val results = queries.map(session.execute(_)).map(_.all).reduce(_++_)
     results.map(row => {
       selectedFields.map(f => (f, row.getObject(obj.selectionOfField(f))))
     })

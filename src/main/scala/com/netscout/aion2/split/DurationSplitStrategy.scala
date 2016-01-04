@@ -44,6 +44,22 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
     new Date(UUIDs.unixTimestamp(uuid))
   }
 
+  class InstantRange (
+    val start: Instant,
+    val end: Instant
+  ) extends Iterable[Instant] {
+    override def iterator = {
+      new Iterator[Instant] {
+        var current = start
+        override def hasNext = current.plus(duration).isAfter(end)
+        override def next = {
+          current = current.plus(duration)
+          current
+        }
+      }
+    }
+  }
+
   class RangeQueryStrategy (
     val fromDate: Instant,
     val toDate: Instant
@@ -69,9 +85,7 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
         if (max.isBefore(min)) {
           None
         } else {
-          val minDate: Date = min
-          val maxDate: Date = max
-          Some((minDate.asInstanceOf[Object], maxDate.asInstanceOf[Object]))
+          Some(new InstantRange(min, max).map(i => instantToDate(i)))
         }
       }
     }
