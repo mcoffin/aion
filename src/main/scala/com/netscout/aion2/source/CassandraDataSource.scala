@@ -154,9 +154,13 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
     val fieldSelections = selectedFields.map(obj.selectionOfField(_))
 
     val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM ${index.columnFamilyName}"
-    val minMaxStmt = new BoundStatement(session.prepare(minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"))
+    val minMaxStmtStr = minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"
+    val minMaxStmt = session.prepare(minMaxStmtStr)
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
-    val partialQueries = query.partialRows.map(rowKey => minMaxStmt.bind(partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) : _*))
+    val partialQueries = query.partialRows.map(rowKey => {
+      val variablesToBind = partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey)
+      new BoundStatement(minMaxStmt).bind(variablesToBind : _*)
+    })
 
     // Now for the middle queries
     val queries: Iterable[Statement] = query.fullRows match {
