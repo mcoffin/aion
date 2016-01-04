@@ -111,7 +111,8 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val strategy = uut.strategyForQuery(query(realStart, realEnd))
     strategy.partialRows.head should equal (new Date(0))
     val fullRowDate = new Date(Instant.EPOCH.plus(7, DAYS).toEpochMilli)
-    strategy.fullRows should equal (Some((fullRowDate, fullRowDate)))
+    strategy.fullRows.get.size shouldBe 1
+    strategy.fullRows.get.head shouldEqual fullRowDate
     strategy.minimum shouldEqual (new Date(realStart.toEpochMilli))
     strategy.maximum shouldEqual (new Date(realEnd.toEpochMilli))
   }
@@ -126,7 +127,8 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val lastFullRow = new Date(Instant.EPOCH.plus(3*7, DAYS).toEpochMilli)
 
     strategy.partialRows.size shouldBe 2
-    strategy.fullRows shouldEqual Some((firstFullRow, lastFullRow))
+    strategy.fullRows.get.head shouldEqual firstFullRow
+    strategy.fullRows.get.last shouldEqual lastFullRow
   }
 
   it should "return a rounded row key for a time in the middle of a row" in {

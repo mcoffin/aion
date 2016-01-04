@@ -50,11 +50,18 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
   ) extends Iterable[Instant] {
     override def iterator = {
       new Iterator[Instant] {
-        var current = start
-        override def hasNext = current.plus(duration).isAfter(end)
+        var current = start.minus(duration)
+        override def hasNext = {
+          val possibleNext = current.plus(duration)
+          possibleNext.isBefore(end) || possibleNext.equals(end)
+        }
         override def next = {
-          current = current.plus(duration)
-          current
+          if (hasNext) {
+            current = current.plus(duration)
+            current
+          } else {
+            null
+          }
         }
       }
     }
