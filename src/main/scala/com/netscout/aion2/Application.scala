@@ -102,23 +102,32 @@ class Application(val config: Config) extends ResourceConfig {
 
       indexResourceBuilder.addMethod("POST").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
         override def apply(request: ContainerRequestContext) = {
-          import com.fasterxml.jackson.databind.JsonMappingException
+          import com.fasterxml.jackson.databind.{JsonMappingException, JsonNode}
           import javax.ws.rs.core.Response.Status._
 
           try {
-            val values = mapper.readValue(request.getEntityStream, classOf[java.util.Map[String, Object]]).toMap
+            val values = mapper.readTree(request.getEntityStream)
+            val newValues = values.fieldNames.map(fieldName => {
+              val typeName = obj.fields.get(fieldName) match {
+                case Some(name) => name
+                case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for index ${index.name}")
+              }
+              val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new Exception("This shouldn't happen if Jackson returns consistent data"))
+              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName))
+              (fieldName, newV.asInstanceOf[AnyRef])
+            }).toMap
             val maybeSplitKeyValue = for {
-              realValue <- values.get(index.split.column)
-              roundedValue <- Some(splitStrategy.rowKey(realValue))
+              realValue <- newValues.get(index.split.column)
+              roundedValue <- Some(splitStrategy.rowKey(realValue.asInstanceOf[AnyRef]))
             } yield roundedValue
             val splitKeyValue = maybeSplitKeyValue match {
               case Some(x) => x
               case None => throw new IllegalQueryException("The split key value must be present for an insert")
             }
-            dataSource.insertQuery(obj, index, values, splitKeyValue)
+            dataSource.insertQuery(obj, index, newValues, splitKeyValue)
             Response.status(CREATED).build()
           } catch {
-            case (jme: JsonMappingException) => throw new IllegalQueryException("Error parsing JSON input", jme)
+            case (jme: JsonMappingException) => throw jme//throw new IllegalQueryException("Error parsing JSON input", jme)
           }
         }
       })

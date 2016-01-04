@@ -15,6 +15,7 @@ import net.ceedubs.ficus.Ficus._
 import scala.concurrent.duration.FiniteDuration
 
 class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
+  import java.util.UUID
   import scala.language.implicitConversions
 
   val cfg = maybeCfg match {
@@ -37,6 +38,11 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
 
   implicit def instantToDate(i: Instant) = Date.from(i)
   implicit def dateToInstant(d: Date) = d.toInstant
+  implicit def uuidToInstant(uuid: UUID): Instant = {
+    import com.datastax.driver.core.utils.UUIDs
+
+    new Date(UUIDs.unixTimestamp(uuid))
+  }
 
   class RangeQueryStrategy (
     val fromDate: Instant,
@@ -86,6 +92,7 @@ class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
     val inputInstant: Instant = obj match {
       case x: Instant => x
       case x: Date => x
+      case uuid: UUID => uuid
       case _ => throw new IllegalQueryException(s"Value of type ${obj.getClass.getName} cannot be used as a value for DurationSplitStrategy")
     }
     val outputDate: Date = roundInstant(inputInstant)

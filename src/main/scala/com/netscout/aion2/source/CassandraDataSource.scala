@@ -59,6 +59,30 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
    */
   private def splitRowKey(columnName: String) = s"${columnName}_row"
 
+  override def classOfType(t: String) = {
+    import com.datastax.driver.core.DataType
+    import com.datastax.driver.core.DataType.Name._
+
+    val cqlType = DataType.Name.valueOf(t.toUpperCase)
+
+    cqlType match {
+      case ASCII => classOf[String]
+      case BIGINT => classOf[java.lang.Long]
+      case BLOB => classOf[java.nio.ByteBuffer]
+      case BOOLEAN => classOf[Boolean]
+      case COUNTER => classOf[Long]
+      case DECIMAL => classOf[java.math.BigDecimal]
+      case DOUBLE => classOf[Double]
+      case FLOAT => classOf[Float]
+      case INT => classOf[Int]
+      case TIMESTAMP => classOf[java.util.Date]
+      case TIMEUUID => classOf[java.util.UUID]
+      case UUID => classOf[java.util.UUID]
+      case TEXT => classOf[String]
+      case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+    }
+  }
+
   override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef], splitKeyValue: AnyRef) {
     import com.datastax.driver.core.querybuilder.QueryBuilder
 

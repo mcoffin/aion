@@ -12,9 +12,9 @@
         {
             "fields": {
                 "time": "timeuuid",
-                "org": "uuid",
-                "pulse": "uuid",
-                "test": "uuid",
+                "org": "text",
+                "pulse": "text",
+                "test": "text",
                 "value": "double"
             },
             "indices": [
