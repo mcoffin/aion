@@ -72,25 +72,29 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
   }
 
   override def initializeSchema(objects: Set[AionObjectConfig]) {
-    objects.map(obj => {
-      val fieldDefinitions = obj.fields.map(_ match {
-        case (k, v) => s"${k} ${v}"
-      })
-      obj.indices.map(index => {
-        val rangeKeyDefinitionPrefix = if (index.range.size > 0) {
-          ", "
-        } else {
-          ""
-        }
-        val partitionKeyPrefix = if (index.partition.size > 0) {
-          ", "
-        } else {
-          ""
-        }
-        val rangeKeyDefinition = rangeKeyDefinitionPrefix ++ (index.range mkString ", ")
-        s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).get)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
-      })
-    }).reduce(_++_).foreach(session.execute(_))
+    // This guard is needed because reduce will throw UnsupportedOperationException
+    // if there are no objects in the schema
+    if (objects.size > 0) {
+      objects.map(obj => {
+        val fieldDefinitions = obj.fields.map(_ match {
+          case (k, v) => s"${k} ${v}"
+        })
+        obj.indices.map(index => {
+          val rangeKeyDefinitionPrefix = if (index.range.size > 0) {
+            ", "
+          } else {
+            ""
+          }
+          val partitionKeyPrefix = if (index.partition.size > 0) {
+            ", "
+          } else {
+            ""
+          }
+          val rangeKeyDefinition = rangeKeyDefinitionPrefix ++ (index.range mkString ", ")
+          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).get)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
+        })
+      }).reduce(_++_).foreach(session.execute(_))
+    }
   }
 
   override def classOfType(t: String) = {
