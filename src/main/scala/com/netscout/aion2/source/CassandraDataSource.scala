@@ -60,6 +60,39 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
    */
   private def splitRowKey(columnName: String) = s"${columnName}_row"
 
+  /**
+   * Gets the type for the row key given a split key type
+   *
+   * @param splitKeyType the type of the regular split key column
+   * @return the name of the type for the split row key column
+   */
+  private def rowKeyType(splitKeyType: String) = splitKeyType match {
+    case "timeuuid" => "timestamp"
+    case x => x
+  }
+
+  override def initializeSchema(objects: Set[AionObjectConfig]) {
+    objects.map(obj => {
+      val fieldDefinitions = obj.fields.map(_ match {
+        case (k, v) => s"${k} ${v}"
+      })
+      obj.indices.map(index => {
+        val rangeKeyDefinitionPrefix = if (index.range.size > 0) {
+          ", "
+        } else {
+          ""
+        }
+        val partitionKeyPrefix = if (index.partition.size > 0) {
+          ", "
+        } else {
+          ""
+        }
+        val rangeKeyDefinition = rangeKeyDefinitionPrefix ++ (index.range mkString ", ")
+        s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).get)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
+      })
+    }).reduce(_++_).foreach(session.execute(_))
+  }
+
   override def classOfType(t: String) = {
     import com.datastax.driver.core.DataType
     import com.datastax.driver.core.DataType.Name._
