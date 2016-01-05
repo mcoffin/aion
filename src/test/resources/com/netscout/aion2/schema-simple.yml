@@ -1,0 +1,22 @@
+---
+objects:
+  - fields:
+      partition: text
+      range: text
+      time: timeuuid
+      data: blob
+    indices:
+      - name: test_data
+        partition:
+          - partition
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        range:
+          - range
+        clustering:
+          field: time
+          order: DESC

@@ -29,7 +29,8 @@ class ApplicationWrapper extends ResourceConfig {
 
   val injector = Guice.createInjector(
     TypesafeConfigModule.fromConfig(ConfigFactory.load),
-    ConfigModule,
+    SchemaProviderModule,
+    DataSourceModule,
     JacksonModule,
     new ApplicationWrapperModule(this))
 

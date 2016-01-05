@@ -3,22 +3,30 @@ package com.netscout.aion2
 import com.github.racc.tscg.TypesafeConfigModule
 import com.google.inject.{AbstractModule, Guice}
 import com.netscout.aion2.inject._
+import com.netscout.aion2.model.DataSource
 
 import javax.ws.rs.core.{Application => JAXRSApplication}
 
 import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
+import org.mockito.Mockito._
 import org.scalatest._
+import org.scalatest.mock.MockitoSugar
 
-class ApplicationSpec extends FlatSpec with Matchers {
+class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
 
   val resourceConfig = new ResourceConfig
+  val dataSource = mock[DataSource]
 
-  class TestResourceConfigModule extends AbstractModule with ScalaModule {
+  class TestModule (
+    val name: String
+  ) extends AbstractModule with ScalaModule {
     override def configure {
       bind[ResourceConfig].toInstance(resourceConfig)
+      bind[SchemaProvider].toInstance(new AionConfig(classOf[ApplicationSpec].getResourceAsStream(s"schema-${name}.yml")))
+      bind[DataSource].toInstance(dataSource)
     }
   }
 
@@ -29,9 +37,8 @@ class ApplicationSpec extends FlatSpec with Matchers {
 
     val injector = Guice.createInjector(
       TypesafeConfigModule.fromConfig(namedConfig(name)),
-      ConfigModule,
       JacksonModule,
-      new TestResourceConfigModule)
+      new TestModule(name))
 
     injector.instance[Application]
   }
