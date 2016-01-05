@@ -1,6 +1,5 @@
 package com.netscout.aion2
 
-import com.github.racc.tscg.TypesafeConfig
 import com.google.inject.Inject
 import com.netscout.aion2.model.AionObjectConfig
 import com.typesafe.config.Config

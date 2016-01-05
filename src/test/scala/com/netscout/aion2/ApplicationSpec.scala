@@ -60,4 +60,9 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     resourceConfig.getSingletons should not be (null)
     resourceConfig.resourceCount should be (0)
   }
+
+  it should "register 2 resources with simple configuration" in {
+    val uut = namedApplication("simple")
+    resourceConfig.getResources.size shouldBe 2
+  }
 }
