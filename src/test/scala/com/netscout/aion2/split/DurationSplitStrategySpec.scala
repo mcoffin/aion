@@ -84,6 +84,8 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     val strategy = uut.strategyForQuery(query(Instant.EPOCH, Instant.EPOCH))
     strategy.fullRows shouldBe None
     strategy.partialRows.size should be (0)
+    strategy.minimum shouldBe null
+    strategy.maximum shouldBe null
   }
 
   it should "round the start time down to row time" in {
