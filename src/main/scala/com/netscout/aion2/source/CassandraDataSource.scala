@@ -27,10 +27,9 @@ class CassandraDataSource @Inject() (
      * Gets the title of the row returned in a query for a given field name
      */
     def selectionOfField(field: String) = {
-      if (obj.fields.get(field).equals(Some("timeuuid"))) {
-        s"system.dateOf(${field})"
-      } else {
-        field
+      Option(obj.fields.get(field)) match {
+        case Some("timeuuid") => s"system.dateOf(${field})"
+        case _ => field
       }
     }
   }
