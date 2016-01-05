@@ -11,6 +11,7 @@ import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
 import org.glassfish.jersey.test.JerseyTest
+import org.mockito.{Matchers => MockitoMatchers}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.BDDMockito._
@@ -141,7 +142,13 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+    verify(f.testModule.dataSource).executeQuery(
+      anyObject(),
+      anyObject(),
+      anyObject(),
+      MockitoMatchers.eq(Map("partition" -> "somePartition")),
+      MockitoMatchers.eq(Map())
+    ) // TODO: better matching of the QueryStrategy
 
     f.test.tearDown
   }
@@ -163,7 +170,13 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+    verify(f.testModule.dataSource).executeQuery(
+      anyObject(),
+      anyObject(),
+      anyObject(),
+      MockitoMatchers.eq(Map("partition" -> "somePartition")),
+      MockitoMatchers.eq(Map())
+    ) // TODO: better matching of the QueryStrategy
   }
 
   it should "ask the DataSource for data on HTTP GET on a full index with range keys" in {
@@ -183,7 +196,13 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+    verify(f.testModule.dataSource).executeQuery(
+      anyObject(),
+      anyObject(),
+      anyObject(),
+      MockitoMatchers.eq(Map("partition" -> "somePartition")),
+      MockitoMatchers.eq(Map("range" -> "someRange"))
+    ) // TODO: better matching of the QueryStrategy
   }
 
   it should "return 404 for data on HTTP GET on a full index without partition keys" in {
@@ -222,7 +241,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), MockitoMatchers.eq(Map()), MockitoMatchers.eq(Map())) // TODO: better matching of the QueryStrategy
 
     f.test.tearDown
   }

@@ -101,9 +101,11 @@ class Application @Inject() (
 
           val pathParameters = info.getPathParameters.mapValues(_.head).toMap
 
+          println(pathParameters.get("rangeKeys"))
+
           val rangeKeyMap = (for {
             rangeKeysStr <- pathParameters.get("rangeKeys")
-          } yield (index.range zip rangeKeysStr.split("/")).toMap).getOrElse(Map())
+          } yield (index.range zip rangeKeysStr.split("/").slice(1, rangeKeysStr.size)).toMap).getOrElse(Map())
 
           val partitionParameters = pathParameters.filterKeys(key => !(key equals "rangeKeys"))
 
