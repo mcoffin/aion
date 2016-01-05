@@ -124,7 +124,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     noPartitionResources.size shouldBe 2
   }
 
-  "The resource resource" should "ask the DataSource for data on HTTP GET" in {
+  "The resource resource" should "ask the DataSource for data on HTTP GET with no range keys" in {
     import java.time.Instant
     import java.time.temporal.ChronoUnit._
 
@@ -146,7 +146,88 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     f.test.tearDown
   }
 
-  "The index resource" should "insert into the DataSource on HTTP PUT" in {
+  it should "ask the DataSource for data on HTTP GET on a full index with no range keys" in {
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+
+    val f = namedFixture("complete")
+
+    // given
+    f.testModule.setupTestDataTypes
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+
+    // when
+    val now = Instant.now
+    val end = now.plus(1, HOURS)
+    val result: Response = f.test.target(s"/foo/somePartition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+
+    // then
+    result.getStatus shouldBe 200
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+  }
+
+  it should "ask the DataSource for data on HTTP GET on a full index with range keys" in {
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+
+    val f = namedFixture("complete")
+
+    // given
+    f.testModule.setupTestDataTypes
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+
+    // when
+    val now = Instant.now
+    val end = now.plus(1, HOURS)
+    val result: Response = f.test.target(s"/foo/somePartition/someRange").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+
+    // then
+    result.getStatus shouldBe 200
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+  }
+
+  it should "return 404 for data on HTTP GET on a full index without partition keys" in {
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+
+    val f = namedFixture("complete")
+
+    // given
+    f.testModule.setupTestDataTypes
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+
+    // when
+    val now = Instant.now
+    val end = now.plus(1, HOURS)
+    val result: Response = f.test.target("/foo").queryParam("from", now.toString).queryParam("to", now.toString).request().get()
+
+    // then
+    result.getStatus shouldBe 405
+  }
+
+  it should "ask the DataSource for data on HTTP GET with no partition / range keys" in {
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+
+    val f = namedFixture("complete")
+
+    // given
+    f.testModule.setupTestDataTypes
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+
+    // when
+    val now = Instant.now
+    val end = now.plus(1, HOURS)
+    val result: Response = f.test.target(s"/no_partition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+
+    // then
+    result.getStatus shouldBe 200
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+
+    f.test.tearDown
+  }
+
+  "The index resource" should "insert into the DataSource on HTTP PUT with no range keys" in {
     import com.datastax.driver.core.utils.UUIDs
     import javax.ws.rs.client.Entity
 
