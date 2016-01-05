@@ -5,18 +5,25 @@ import com.google.inject.{AbstractModule, Guice}
 import com.netscout.aion2.inject._
 import com.netscout.aion2.model.DataSource
 
-import javax.ws.rs.core.{Application => JAXRSApplication}
+import javax.ws.rs.core.{Application => JAXRSApplication, Response}
 
 import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
+import org.glassfish.jersey.test.JerseyTest
+import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.mockito.BDDMockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 
 class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
   import scala.collection.JavaConversions._
+
+  class ApplicationJerseyTest (
+    val application: JAXRSApplication
+  ) extends JerseyTest(application)
 
   class TestModule (
     val name: String
@@ -53,6 +60,8 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     new {
       val testModule = new TestModule(name)
       val app = namedApplication(name, Some(testModule))
+      val test = new ApplicationJerseyTest(testModule.resourceConfig)
+      test.setUp()
     }
 
   def defaultFixture = namedFixture("defaults")
@@ -105,5 +114,26 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val registeredResources = resourceConfig.getResources
     val noPartitionResources = registeredResources.filter(r => r.getPath.equals("/no_partition"))
     noPartitionResources.size shouldBe 2
+  }
+
+  "The resource resource" should "ask the DataSource for data on HTTP GET" in {
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+
+    val f = namedFixture("complete")
+
+    // given
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+
+    // when
+    val now = Instant.now
+    val end = now.plus(1, HOURS)
+    val result: Response = f.test.target(s"/bar/somePartition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+
+    // then
+    result.getStatus shouldBe 200
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject())
+
+    f.test.tearDown
   }
 }

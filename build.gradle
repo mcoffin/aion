@@ -19,7 +19,7 @@ dependencies {
     compile "org.scala-lang:scala-library:${scalaVersion}.+"
     compile "javax.ws.rs:javax.ws.rs-api:2+"
     compile "org.eclipse.jetty.aggregate:jetty-all:9+"
-    compile "org.glassfish.jersey.containers:jersey-container-servlet:2+"
+    compile "org.glassfish.jersey.containers:jersey-container-servlet:${jerseyVersion}"
     compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
@@ -32,6 +32,8 @@ dependencies {
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"
     testCompile "org.mockito:mockito-core:1+"
+    testCompile "org.glassfish.jersey.test-framework:jersey-test-framework-core:${jerseyVersion}"
+    testCompile "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-inmemory:${jerseyVersion}"
 
     testRuntime "org.pegdown:pegdown:+"
 
