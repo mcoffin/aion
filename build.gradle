@@ -15,7 +15,6 @@ version = "0.1.0"
 
 dependencies {
     compile "org.scala-lang:scala-library:${scalaVersion}.+"
-    compile "com.iheart:ficus_${scalaVersion}:1.2+"
     compile "javax.ws.rs:javax.ws.rs-api:2+"
     compile "org.eclipse.jetty.aggregate:jetty-all:9+"
     compile "org.glassfish.jersey.containers:jersey-container-servlet:2+"

@@ -3,14 +3,11 @@ package com.netscout.aion2.split
 import com.netscout.aion2.SplitStrategy
 import com.netscout.aion2.except.IllegalQueryException
 import com.netscout.aion2.model.{QueryStrategy, EmptyQueryStrategy}
-import com.typesafe.config.Config
 
 import java.time.{Duration, Instant}
 import java.util.Date
 
 import javax.ws.rs.core.MultivaluedMap
-
-import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.duration.FiniteDuration
 
