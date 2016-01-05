@@ -57,7 +57,7 @@ class Application @Inject() (
       val partitionPathKeys = index.partition.map(p => s"{$p}")
       val path = (Seq(index.name) ++ partitionPathKeys) mkString "/"
       val rangeKeysParameter = if (index.range.size > 0) {
-        s"{rangeKeys: ((/([\\w\\.\\d\\-%]+)){1,${index.range.size}})?}"
+        s"{rangeKeys : ((/([\\w\\.\\d\\-%]+)){1,${index.range.size}})?}"
       } else {
         ""
       }
@@ -99,7 +99,17 @@ class Application @Inject() (
 
           val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
 
-          val results = dataSource.executeQuery(obj, index, queryStrategy, info.getPathParameters.mapValues(_.head).toMap).map(_.toMap)
+          val pathParameters = info.getPathParameters.mapValues(_.head).toMap
+
+          println(pathParameters.get("rangeKeys"))
+
+          val rangeKeyMap = (for {
+            rangeKeysStr <- pathParameters.get("rangeKeys")
+          } yield (index.range zip rangeKeysStr.split("/").slice(1, rangeKeysStr.size)).toMap).getOrElse(Map())
+
+          val partitionParameters = pathParameters.filterKeys(key => !(key equals "rangeKeys"))
+
+          val results = dataSource.executeQuery(obj, index, queryStrategy, partitionParameters.toMap, rangeKeyMap).map(_.toMap)
           val stream = new StreamingOutput() {
             import java.io.OutputStream
 

@@ -122,7 +122,7 @@ class CassandraDataSource @Inject() (
     session.execute(insertStmt)
   }
 
-  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
+  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef], rangeKeys: Map[String, AnyRef]) = {
     import com.datastax.driver.core.Row
 
     val partitionClauses = index.partition.map(p => s"${p} = ?")
@@ -139,8 +139,10 @@ class CassandraDataSource @Inject() (
       case _ => "?"
     }
 
-    val rangeClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${splitRowKey(index.split.column)} = ?")
-    val whereClauses = partitionClauses ++ rangeClauses
+    val splitClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${splitRowKey(index.split.column)} = ?")
+    val rangeKeyArr = rangeKeys.keys.toArray
+    val rangeClauses = rangeKeyArr.map(_ ++ " = ?")
+    val whereClauses = partitionClauses ++ splitClauses ++ rangeClauses
 
     val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
     val fieldSelections = selectedFields.map(obj.selectionOfField(_))
@@ -149,8 +151,9 @@ class CassandraDataSource @Inject() (
     val minMaxStmtStr = minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"
     val minMaxStmt = session.prepare(minMaxStmtStr)
     val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
+    val rangeConstraints = rangeKeyArr.map(rangeKeys.get(_).get)
     val partialQueries = query.partialRows.map(rowKey => {
-      val variablesToBind = partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey)
+      val variablesToBind = partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) ++ rangeConstraints
       new BoundStatement(minMaxStmt).bind(variablesToBind : _*)
     })
 
