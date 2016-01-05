@@ -1,26 +1,19 @@
 package com.netscout.aion2.source
 
 import com.datastax.driver.core._
+import com.github.racc.tscg.TypesafeConfig
+import com.google.inject.Inject
 import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig, QueryStrategy, DataSource}
-import com.typesafe.config.{Config, ConfigException}
 
-import net.ceedubs.ficus.Ficus._
-
-class CassandraDataSource(cfg: Option[Config]) extends DataSource {
+class CassandraDataSource @Inject() (
+  @TypesafeConfig("com.netscout.aion2.cassandra.contactPoints") contactPoints: java.util.List[String],
+  @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceName: String
+) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
-  import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-  import net.ceedubs.ficus.readers.CollectionReaders._
   import scala.collection.JavaConversions._
 
-  val keyspaceName = "aion"
-
-  val config = cfg match {
-    case Some(x) => x
-    case None => throw new Exception("Missing dataSource configuration for CassandraDataSource")
-  }
-
   val cluster = Cluster.builder()
-    .addContactPoints(config.as[Array[String]]("contactPoints") : _*)
+    .addContactPoints(contactPoints : _*)
     .build()
 
   lazy val session = cluster.connect()
@@ -91,7 +84,7 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
             ""
           }
           val rangeKeyDefinition = rangeKeyDefinitionPrefix ++ (index.range mkString ", ")
-          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).get)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
+          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
         })
       }).reduce(_++_).foreach(session.execute(_))
     }
@@ -135,13 +128,13 @@ class CassandraDataSource(cfg: Option[Config]) extends DataSource {
 
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
-    val lowRangeSuffix = obj.fields.get(index.split.column) match {
+    val lowRangeSuffix = Option(obj.fields.get(index.split.column)) match {
       case Some("timeuuid") =>
         "minTimeuuid(?)"
       case _ => "?"
     }
 
-    val highRangeSuffix = obj.fields.get(index.split.column) match {
+    val highRangeSuffix = Option(obj.fields.get(index.split.column)) match {
       case Some("timeuuid") =>
         "maxTimeuuid(?)"
       case _ => "?"

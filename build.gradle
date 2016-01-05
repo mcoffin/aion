@@ -23,6 +23,10 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     compile "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
     compile "com.datastax.cassandra:cassandra-driver-core:3+"
+    compile "com.google.inject:guice:${guiceVersion}"
+    compile "net.codingwell:scala-guice_${scalaVersion}:${guiceVersion}"
+    compile "com.github.racc:typesafeconfig-guice:+"
+    compile "org.yaml:snakeyaml:1.+"
 
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"

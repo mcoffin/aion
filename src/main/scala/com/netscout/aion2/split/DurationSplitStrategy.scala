@@ -14,18 +14,18 @@ import net.ceedubs.ficus.Ficus._
 
 import scala.concurrent.duration.FiniteDuration
 
-class DurationSplitStrategy(maybeCfg: Option[Config]) extends SplitStrategy {
+class DurationSplitStrategy(maybeCfg: Option[Map[String, String]]) extends SplitStrategy {
   import java.util.UUID
   import scala.language.implicitConversions
 
-  val cfg = maybeCfg match {
-    case Some(x) => x
-    case None => throw new Exception("Configuration must be supplied for a DurationSplitStrategy")
-  }
-
-  val duration = {
-    val durationStr = cfg.as[String]("duration")
-    Duration.parse(durationStr)
+  val maybeDuration = for {
+    cfg <- maybeCfg
+    durationStr <- cfg.get("duration")
+    d <- Some(Duration.parse(durationStr))
+  } yield d
+  val duration = maybeDuration match {
+    case Some(d) => d
+    case None => throw new Exception("duration must be supplied as configuration for DurationSplitStrategy")
   }
 
   private def roundInstant(i: Instant) = {

@@ -1,0 +1,105 @@
+---
+{
+    "objects": [
+        {
+            "fields": {
+                "time": "timeuuid",
+                "org": "text",
+                "pulse": "text",
+                "test": "text",
+                "value": "double"
+            },
+            "indices": [
+                {
+                    "name": "test_data",
+                    "partition": [
+                        "org",
+                        "pulse",
+                        "test"
+                    ],
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P1D"
+                            }
+                        }
+                    },
+                    "range": [],
+                    "clustering": {
+                        "field": "time",
+                        "order": "DESC"
+                    }
+                }
+            ]
+        },
+        {
+            "fields": {
+                "time": "timeuuid",
+                "org": "uuid",
+                "pulse": "uuid",
+                "test": "uuid",
+                "granularity": "bigint",
+                "min": "double",
+                "max": "double",
+                "average": "double",
+                "count": "bigint"
+            },
+            "indices": [
+                {
+                    "name": "test_data_rollups",
+                    "partition": [
+                        "org",
+                        "pulse",
+                        "test"
+                    ],
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P30D"
+                            }
+                        }
+                    },
+                    "range": [
+                        "granularity"
+                    ],
+                    "clustering": {
+                        "field": "time",
+                        "order": "DESC"
+                    }
+                }
+            ]
+        },
+        {
+            "fields": {
+                "time": "timeuuid",
+                "high": "int",
+                "medium": "int",
+                "low": "int"
+            },
+            "indices": [
+                {
+                    "name": "redstone_defect_stats",
+                    "partition": [],
+                    "split": {
+                        "column": "time",
+                        "strategy": {
+                            "name": "duration",
+                            "config": {
+                                "duration": "P7D"
+                            }
+                        }
+                    },
+                    "range": [],
+                    "clustering": {
+                        "field": "time",
+                        "order": "DESC"
+                    }
+                }
+            ]
+        }
+    ]
+}

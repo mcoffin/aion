@@ -1,46 +1,52 @@
 package com.netscout.aion2
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.racc.tscg.TypesafeConfigModule
+import com.google.inject.{AbstractModule, Guice, Inject}
 import com.netscout.aion2.except._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.netscout.aion2.model.DataSource
+import com.typesafe.config.ConfigFactory
+
+import javax.ws.rs.core.{Application => JAXRSApplication}
+
+import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
 
 import scala.collection.JavaConversions._
 
-class ApplicationWrapper extends Application(ConfigFactory.load())
+class ApplicationWrapper extends ResourceConfig {
+  import com.netscout.aion2.inject._
+  import net.codingwell.scalaguice.InjectorExtensions._
 
-class Application(val config: Config) extends ResourceConfig {
-  import com.fasterxml.jackson.databind.ObjectMapper
-  import com.fasterxml.jackson.module.scala.DefaultScalaModule
+  class ApplicationWrapperModule (
+    val wrapper: ApplicationWrapper
+  ) extends AbstractModule with ScalaModule {
+    override def configure {
+      bind[ResourceConfig].toInstance(wrapper)
+    }
+  }
+
+  val injector = Guice.createInjector(
+    TypesafeConfigModule.fromConfig(ConfigFactory.load),
+    ConfigModule,
+    JacksonModule,
+    new ApplicationWrapperModule(this))
+
+  val realApplication = injector.instance[Application]
+}
+
+class Application @Inject() (
+  configSchemaProvider: SchemaProvider,
+  val dataSource: DataSource,
+  val mapper: ObjectMapper,
+  val resourceConfig: ResourceConfig
+) extends ResourceConfig {
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
   import com.typesafe.config.ConfigException
 
-  val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(new AionConfig(config))
-  var dataSource = new CassandraDataSource(getOptionalConfig("dataSource"))
-
-  // Initialize Jackson for JSON parsing
-  val mapper = new ObjectMapper()
-  mapper.registerModule(DefaultScalaModule)
-
-  /**
-   * Gets an optional configuration value
-   */
-  private[aion2] def getOptionalConfig(key: String) = {
-    try {
-      Some(config.getConfig(getConfigKey(key)))
-    } catch {
-      case (e: ConfigException.Missing) => None
-    }
-  }
-
-  /**
-   * Prepends the configuration prefix to the key to produce a
-   * fully pathed configuration key
-   */
-  private[aion2] def getConfigKey(key: String) = {
-    "com.netscout.aion2." ++ key
-  }
+  val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(configSchemaProvider)
 
   implicit class AionIndexResource(val index: AionIndexConfig) {
     /**
@@ -48,7 +54,8 @@ class Application(val config: Config) extends ResourceConfig {
      */
     def resourcePath = {
       val partitionPathKeys = index.partition.map(p => s"{$p}")
-      (Seq(index.name) ++ partitionPathKeys) mkString "/"
+      val path = (Seq(index.name) ++ partitionPathKeys) mkString "/"
+      path
     }
 
     /**
@@ -108,12 +115,12 @@ class Application(val config: Config) extends ResourceConfig {
           try {
             val values = mapper.readTree(request.getEntityStream)
             val newValues = values.fieldNames.map(fieldName => {
-              val typeName = obj.fields.get(fieldName) match {
+              val typeName = Option(obj.fields.get(fieldName)) match {
                 case Some(name) => name
                 case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for index ${index.name}")
               }
               val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new Exception("This shouldn't happen if Jackson returns consistent data"))
-              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName))
+              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
               (fieldName, newV.asInstanceOf[AnyRef])
             }).toMap
             val maybeSplitKeyValue = for {
@@ -124,7 +131,7 @@ class Application(val config: Config) extends ResourceConfig {
               case Some(x) => x
               case None => throw new IllegalQueryException("The split key value must be present for an insert")
             }
-            dataSource.insertQuery(obj, index, newValues, splitKeyValue)
+            dataSource.insertQuery(obj, index, newValues, splitKeyValue.asInstanceOf[AnyRef])
             Response.status(CREATED).build()
           } catch {
             case (jme: JsonMappingException) => throw jme//throw new IllegalQueryException("Error parsing JSON input", jme)
@@ -151,7 +158,8 @@ class Application(val config: Config) extends ResourceConfig {
 
     // If we have 0 resources, reduce() will cause an error
     if (resourceLists.size > 0) {
-      registerResources(resourceLists.reduce(_++_))
+      val resourceList = resourceLists.reduce(_++_)
+      resourceConfig.registerResources(resourceList)
     }
   }
 
