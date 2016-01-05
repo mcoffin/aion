@@ -30,6 +30,7 @@ dependencies {
 
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"
+    testCompile "org.mockito:mockito-core:1+"
 
     testRuntime "org.pegdown:pegdown:+"
 }

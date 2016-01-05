@@ -29,7 +29,8 @@ class ApplicationWrapper extends ResourceConfig {
 
   val injector = Guice.createInjector(
     TypesafeConfigModule.fromConfig(ConfigFactory.load),
-    ConfigModule,
+    SchemaProviderModule,
+    DataSourceModule,
     JacksonModule,
     new ApplicationWrapperModule(this))
 
@@ -55,7 +56,13 @@ class Application @Inject() (
     def resourcePath = {
       val partitionPathKeys = index.partition.map(p => s"{$p}")
       val path = (Seq(index.name) ++ partitionPathKeys) mkString "/"
-      path
+      val rangeKeysParameter = if (index.range.size > 0) {
+        s"{rangeKeys: ((/([\\w\\.\\d\\-%]+)){1,${index.range.size}})?}"
+      } else {
+        ""
+      }
+
+      "/" ++ path ++ rangeKeysParameter
     }
 
     /**

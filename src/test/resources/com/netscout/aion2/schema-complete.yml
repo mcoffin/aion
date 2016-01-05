@@ -1,0 +1,56 @@
+---
+objects:
+  - fields:
+      partition: text
+      range: text
+      time: timeuuid
+      data: blob
+    indices:
+      - name: foo
+        partition:
+          - partition
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        range:
+          - range
+        clustering:
+          field: time
+          order: DESC
+  - fields:
+      partition: text
+      time: timeuuid
+      data: blob
+    indices:
+      - name: bar
+        partition:
+          - partition
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        range: []
+        clustering:
+          field: time
+          order: DESC
+  - fields:
+      time: timeuuid
+      data: blob
+    indices:
+      - name: no_partition
+        partition: []
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        range: []
+        clustering:
+          field: time
+          order: DESC
