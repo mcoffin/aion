@@ -116,6 +116,7 @@ class Application @Inject() (
 
       indexResourceBuilder.addMethod("POST").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
         override def apply(request: ContainerRequestContext) = {
+          import com.fasterxml.jackson.core.JsonParseException
           import com.fasterxml.jackson.databind.{JsonMappingException, JsonNode}
           import javax.ws.rs.core.Response.Status._
 
@@ -141,7 +142,8 @@ class Application @Inject() (
             dataSource.insertQuery(obj, index, newValues, splitKeyValue.asInstanceOf[AnyRef])
             Response.status(CREATED).build()
           } catch {
-            case (jme: JsonMappingException) => throw jme//throw new IllegalQueryException("Error parsing JSON input", jme)
+            case (jme: JsonMappingException) => throw new IllegalQueryException("Error mapping JSON input to values", jme)
+            case (jpe: JsonParseException) => throw new IllegalQueryException("Error parsing JSON input", jpe)
           }
         }
       })

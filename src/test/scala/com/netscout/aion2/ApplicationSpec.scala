@@ -241,11 +241,21 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
       "data": ""
     }"""))
 
-    println(result.readEntity(classOf[String]))
-
     result.getStatus shouldBe 201
     verify(f.testModule.dataSource).insertQuery(anyObject(), anyObject(), anyObject(), anyObject())
 
     f.test.tearDown
+  }
+
+  it should "return 400 bad request on bad JSON input" in {
+    import javax.ws.rs.client.Entity
+
+    val f = namedFixture("complete")
+
+    f.testModule.setupTestDataTypes
+
+    val result: Response = f.test.target("/foo").request().post(Entity.json("not really json"))
+
+    result.getStatus shouldBe 400
   }
 }
