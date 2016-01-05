@@ -1,0 +1,8 @@
+sudo: false
+jdk:
+  - oraclejdk8
+language: scala
+script:
+  - ./gradlew check build
+after_success:
+  - ./gradlew reportScoverage coveralls

@@ -4,6 +4,8 @@ plugins {
     id "jetty"
     id "war"
     id "com.github.maiflai.scalatest" version "0.11"
+    id "org.scoverage" version "2.0.0"
+    id "com.github.kt3k.coveralls"
 }
 
 repositories {
@@ -32,6 +34,9 @@ dependencies {
     testCompile "org.mockito:mockito-core:1+"
 
     testRuntime "org.pegdown:pegdown:+"
+
+    scoverage "org.scoverage:scalac-scoverage-plugin_${scalaVersion}:1+"
+    scoverage "org.scoverage:scalac-scoverage-runtime_${scalaVersion}:1+"
 }
 
 compileScala {
@@ -43,3 +48,9 @@ compileScala {
 // application rather than part of a webapp, the default is to run this servlet
 // at the root of the server
 jettyRunWar.contextPath = "/"
+
+// Add tasks to upload coverage information to coveralls
+def scoverageCoberturaPath = "${buildDir}/reports/scoverage/cobertura.xml"
+coveralls {
+    coberturaReportPath = scoverageCoberturaPath
+}
