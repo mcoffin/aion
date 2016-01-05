@@ -31,6 +31,14 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val resourceConfig = new ResourceConfig
     val dataSource = mock[DataSource]
 
+    def setupTestDataTypes {
+      import java.util.UUID
+
+      doReturn(classOf[String]).when(dataSource).classOfType("text")
+      doReturn(classOf[UUID]).when(dataSource).classOfType("timeuuid")
+      doReturn(classOf[Array[Byte]]).when(dataSource).classOfType("blob")
+    }
+
     override def configure {
       bind[ResourceConfig].toInstance(resourceConfig)
       bind[SchemaProvider].toInstance(new AionConfig(classOf[ApplicationSpec].getResourceAsStream(s"schema-${name}.yml")))
@@ -123,6 +131,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val f = namedFixture("complete")
 
     // given
+    f.testModule.setupTestDataTypes
     given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
 
     // when
@@ -132,7 +141,29 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject())
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), anyObject()) // TODO: better matching of the QueryStrategy
+
+    f.test.tearDown
+  }
+
+  "The index resource" should "insert into the DataSource on HTTP PUT" in {
+    import com.datastax.driver.core.utils.UUIDs
+    import javax.ws.rs.client.Entity
+
+    val f = namedFixture("complete")
+
+    f.testModule.setupTestDataTypes
+
+    val result: Response = f.test.target(s"/bar").request().post(Entity.json(s"""{
+      "partition": "somePartition",
+      "time": "${UUIDs.timeBased}",
+      "data": ""
+    }"""))
+
+    println(result.readEntity(classOf[String]))
+
+    result.getStatus shouldBe 201
+    verify(f.testModule.dataSource).insertQuery(anyObject(), anyObject(), anyObject(), anyObject())
 
     f.test.tearDown
   }
