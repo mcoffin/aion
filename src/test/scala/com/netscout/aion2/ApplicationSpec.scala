@@ -18,12 +18,12 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
   import scala.collection.JavaConversions._
 
-  val resourceConfig = new ResourceConfig
-  val dataSource = mock[DataSource]
-
   class TestModule (
     val name: String
   ) extends AbstractModule with ScalaModule {
+    val resourceConfig = new ResourceConfig
+    val dataSource = mock[DataSource]
+
     override def configure {
       bind[ResourceConfig].toInstance(resourceConfig)
       bind[SchemaProvider].toInstance(new AionConfig(classOf[ApplicationSpec].getResourceAsStream(s"schema-${name}.yml")))
@@ -33,17 +33,29 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
   def namedConfig(name: String) = ConfigFactory.parseResources(classOf[ApplicationSpec], name ++ ".json")
 
-  def namedApplication(name: String) = {
+  def namedApplication(name: String, testModule: Option[TestModule] = None) = {
     import net.codingwell.scalaguice.InjectorExtensions._
+
+    val tModule = testModule match {
+      case Some(m) => m
+      case None => new TestModule(name)
+    }
 
     val injector = Guice.createInjector(
       TypesafeConfigModule.fromConfig(namedConfig(name)),
       JacksonModule,
-      new TestModule(name))
+      tModule)
 
     injector.instance[Application]
   }
 
+  def namedFixture(name: String) =
+    new {
+      val testModule = new TestModule(name)
+      val app = namedApplication(name, Some(testModule))
+    }
+
+  def defaultFixture = namedFixture("defaults")
   def defaultApplication = namedApplication("defaults")
 
   implicit class TestApplicationHelper(val app: JAXRSApplication) {
@@ -56,25 +68,42 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   }
 
   it should "not register any resources with no objects" in {
-    val uut = defaultApplication
-    resourceConfig.getClasses should not be (null)
-    resourceConfig.getSingletons should not be (null)
-    resourceConfig.resourceCount should be (0)
+    val f = defaultFixture
+    val uut = f.app
+    f.testModule.resourceConfig.getClasses should not be (null)
+    f.testModule.resourceConfig.getSingletons should not be (null)
+    f.testModule.resourceConfig.resourceCount should be (0)
   }
 
-  it should "register 2 resources with complete configuration" in {
-    val uut = namedApplication("complete")
+  it should "register resources of complete schema" in {
+    val f = namedFixture("complete")
+    val uut = f.app
+    val resourceConfig = f.testModule.resourceConfig
     val registeredResources = resourceConfig.getResources
-    val indexCount = 2
-    registeredResources.size should be (2 * indexCount)
+    val expectedIndexCount = 3
+    registeredResources.size should be (2 * expectedIndexCount)
     val resourcePaths = registeredResources.map(r => (r.getPath, r)).toMap
+
     val fullIndexPath = "/foo"
     val fullResourcePath = "/foo/{partition}{rangeKeys: ((/([\\w\\.\\d\\-%]+)){1,1})?}"
     resourcePaths.keys.contains(fullIndexPath) shouldBe true
     resourcePaths.keys.contains(fullResourcePath) shouldBe true
+
     val noRangeIndexPath = "/bar"
     val noRangeResourcePath = "/bar/{partition}"
     resourcePaths.keys.contains(noRangeIndexPath) shouldBe true
     resourcePaths.keys.contains(noRangeResourcePath) shouldBe true
+
+    val noPartitionPath = "/no_partition"
+    resourcePaths.keys.contains(noPartitionPath) shouldBe true
+  }
+
+  it should "register two resources of identical path for indices without partition keys" in {
+    val f = namedFixture("complete")
+    val uut = f.app
+    val resourceConfig = f.testModule.resourceConfig
+    val registeredResources = resourceConfig.getResources
+    val noPartitionResources = registeredResources.filter(r => r.getPath.equals("/no_partition"))
+    noPartitionResources.size shouldBe 2
   }
 }
