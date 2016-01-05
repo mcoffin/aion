@@ -149,6 +149,25 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     uut.rowKey(realTime) shouldEqual Date.from(realTime)
   }
 
+  it should "be able to handle rowKey inputs of Date" in {
+    val uut = new DurationSplitStrategy(Some(config("P7D")))
+    val rowKeyShould = Instant.EPOCH.plus(7, DAYS)
+    val realTime = rowKeyShould.plus(2, DAYS)
+    uut.rowKey(Date.from(realTime)) shouldEqual Date.from(rowKeyShould)
+  }
+
+  it should "be able to handle rowKey inputs of time-based UUID" in {
+    import com.datastax.driver.core.utils.UUIDs
+    import java.util.{Calendar, TimeZone}
+
+    val uut = new DurationSplitStrategy(Some(config("P1D")))
+    val rowStart = Calendar.getInstance
+    rowStart.setTimeZone(TimeZone.getTimeZone("GMT"))
+    rowStart.set(rowStart.get(Calendar.YEAR), rowStart.get(Calendar.MONTH), rowStart.get(Calendar.DAY_OF_MONTH), 0, 0, 0)
+    val rowKey = uut.rowKey(UUIDs.timeBased).asInstanceOf[Date]
+    (rowKey.getTime / 1000) shouldEqual (rowStart.getTime.getTime / 1000)
+  }
+
   it should "throw IllegalQueryException when a non-date is passed to rowKey" in {
     val uut = new DurationSplitStrategy(Some(config("P7D")))
     val somethingNotADate = "foo"
