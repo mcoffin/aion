@@ -16,6 +16,7 @@ import org.scalatest.mock.MockitoSugar
 
 class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
+  import scala.collection.JavaConversions._
 
   val resourceConfig = new ResourceConfig
   val dataSource = mock[DataSource]
@@ -61,8 +62,19 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     resourceConfig.resourceCount should be (0)
   }
 
-  it should "register 2 resources with simple configuration" in {
-    val uut = namedApplication("simple")
-    resourceConfig.getResources.size shouldBe 2
+  it should "register 2 resources with complete configuration" in {
+    val uut = namedApplication("complete")
+    val registeredResources = resourceConfig.getResources
+    val indexCount = 2
+    registeredResources.size should be (2 * indexCount)
+    val resourcePaths = registeredResources.map(r => (r.getPath, r)).toMap
+    val fullIndexPath = "/foo"
+    val fullResourcePath = "/foo/{partition}{rangeKeys: ((/([\\w\\.\\d\\-%]+)){1,1})?}"
+    resourcePaths.keys.contains(fullIndexPath) shouldBe true
+    resourcePaths.keys.contains(fullResourcePath) shouldBe true
+    val noRangeIndexPath = "/bar"
+    val noRangeResourcePath = "/bar/{partition}"
+    resourcePaths.keys.contains(noRangeIndexPath) shouldBe true
+    resourcePaths.keys.contains(noRangeResourcePath) shouldBe true
   }
 }

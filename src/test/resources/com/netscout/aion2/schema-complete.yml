@@ -6,7 +6,7 @@ objects:
       time: timeuuid
       data: blob
     indices:
-      - name: test_data
+      - name: foo
         partition:
           - partition
         split:
@@ -17,6 +17,24 @@ objects:
               duration: P1D
         range:
           - range
+        clustering:
+          field: time
+          order: DESC
+  - fields:
+      partition: text
+      time: timeuuid
+      data: blob
+    indices:
+      - name: bar
+        partition:
+          - partition
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        range: []
         clustering:
           field: time
           order: DESC
