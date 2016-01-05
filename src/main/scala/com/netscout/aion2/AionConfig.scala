@@ -17,7 +17,7 @@ class AionConfig extends SchemaProvider {
   import scala.collection.JavaConversions._
 
   lazy val cfg: Configuration = {
-    val inputStream = Option(classOf[AionConfig].getClassLoader().getResourceAsStream("/schema.yml")) match {
+    val inputStream = Option(classOf[AionConfig].getResourceAsStream("schema.yml")) match {
       case Some(iStream) => iStream
       case None => throw new RuntimeException("Could not load schema file: schema.yml")
     }

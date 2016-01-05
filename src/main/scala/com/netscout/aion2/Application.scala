@@ -41,7 +41,7 @@ class Application @Inject() (
   val dataSource: DataSource,
   val mapper: ObjectMapper,
   val resourceConfig: ResourceConfig
-) extends ResourceConfig {
+) {
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
   import com.typesafe.config.ConfigException

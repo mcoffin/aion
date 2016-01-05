@@ -2,11 +2,11 @@
     "com": {
         "netscout": {
             "aion2": {
-                "dataSource": {
+                "cassandra": {
+                    "keyspace": "aion",
                     "contactPoints": ["127.0.0.1"]
                 }
             }
         }
-    },
-    "objects": []
+    }
 }

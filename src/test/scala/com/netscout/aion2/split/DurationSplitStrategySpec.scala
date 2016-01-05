@@ -11,14 +11,9 @@ import javax.ws.rs.core.{MultivaluedHashMap, MultivaluedMap}
 import org.scalatest._
 
 class DurationSplitStrategySpec extends FlatSpec with Matchers {
-  private def config(durationStr: String) = {
-    import com.typesafe.config.ConfigFactory
-    import java.util.Properties
-
-    val props = new Properties()
-    props.setProperty("duration", durationStr)
-    ConfigFactory.parseProperties(props)
-  }
+  private def config(durationStr: String) = Map (
+    "duration" -> durationStr
+  )
 
   private def query(durationStr: String): MultivaluedMap[String, String] = {
     import java.time.{Duration, Instant}
