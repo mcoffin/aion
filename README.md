@@ -1,10 +1,8 @@
 # aion
-![Release Status](https://img.shields.io/badge/release-pre--alpha-red.svg)
 [![Build Status](https://img.shields.io/travis/FlukeNetworks/aion/master.svg)](https://travis-ci.com/FlukeNetworks/aion)
 [![Coverage Status](https://img.shields.io/coveralls/FlukeNetworks/aion/master.svg)](https://coveralls.io/github/FlukeNetworks/aion?branch=master)
 [![Stories in Ready](https://badge.waffle.io/FlukeNetworks/aion.svg?label=ready&title=ready)](http://waffle.io/FlukeNetworks/aion)
 [![License](https://img.shields.io/github/license/FlukeNetworks/aion.svg)](https://github.com/FlukeNetworks/aion/blob/master/LICENSE)
-[![Open Issues](https://img.shields.io/github/issues-raw/FlukeNetworks/aion.svg)](https://github.com/FlukeNetworks/aion/issues)
 
 `aion` is a RESTful API to data stored in wide-row style in Cassandra
 
