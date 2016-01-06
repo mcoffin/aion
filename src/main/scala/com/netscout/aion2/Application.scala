@@ -5,6 +5,7 @@ import com.github.racc.tscg.TypesafeConfigModule
 import com.google.inject.{AbstractModule, Guice, Inject}
 import com.netscout.aion2.except._
 import com.netscout.aion2.model.DataSource
+import com.netscout.aion2.resources.Schema
 import com.typesafe.config.ConfigFactory
 
 import javax.ws.rs.core.{Application => JAXRSApplication}
@@ -41,7 +42,8 @@ class Application @Inject() (
   configSchemaProvider: SchemaProvider,
   val dataSource: DataSource,
   val mapper: ObjectMapper,
-  val resourceConfig: ResourceConfig
+  val resourceConfig: ResourceConfig,
+  val schemaResource: Schema
 ) {
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
@@ -171,6 +173,9 @@ class Application @Inject() (
     // Initialize the datasource with the new schema
     dataSource.initializeSchema(schemata)
 
+    // Register the new schema with the schemaResource
+    schemaResource.registerSchema(schemata)
+
     val resourceLists = schemata.map(_.resources)
 
     // If we have 0 resources, reduce() will cause an error
@@ -182,4 +187,6 @@ class Application @Inject() (
 
   // This registers all the resources found by the default schema providers
   builtinSchemaProviders.foreach(registerSchemaProvider(_))
+
+  ResourceConfigUtils.register(resourceConfig, schemaResource)
 }
