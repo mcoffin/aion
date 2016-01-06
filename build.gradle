@@ -29,6 +29,8 @@ dependencies {
     compile "com.github.racc:typesafeconfig-guice:+"
     compile "org.yaml:snakeyaml:1.+"
     compile "org.slf4j:slf4j-api:1+"
+    compile "org.reflections:reflections:+"
+    compile "ch.qos.logback:logback-classic:1+"
 
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"

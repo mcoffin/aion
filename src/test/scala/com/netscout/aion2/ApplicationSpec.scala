@@ -63,6 +63,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
       TypesafeConfigModule.fromConfig(namedConfig(name)),
       JacksonModule,
       Slf4jLoggerModule,
+      AionResourceModule,
       tModule)
 
     injector.instance[Application]

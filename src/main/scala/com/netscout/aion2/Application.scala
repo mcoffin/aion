@@ -34,6 +34,7 @@ class ApplicationWrapper extends ResourceConfig {
     DataSourceModule,
     JacksonModule,
     Slf4jLoggerModule,
+    AionResourceModule,
     new ApplicationWrapperModule(this))
 
   val realApplication = injector.instance[Application]
