@@ -21,6 +21,7 @@ import org.scalatest.mock.MockitoSugar
 class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
   import scala.collection.JavaConversions._
+  import javax.ws.rs.core.Response.Status.Family._
 
   class ApplicationJerseyTest (
     val application: JAXRSApplication
@@ -80,17 +81,25 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     def resourceCount = app.getClasses.size + app.getSingletons.size
   }
 
+  implicit class TestResult(val response: Response) {
+    def shouldBeOfFamily(family: Response.Status.Family) {
+      response.getStatusInfo.getFamily shouldBe family
+    }
+  }
+
   it should "be initializable with minimal configuration" in {
     val uut = defaultApplication
     uut should not be (null)
   }
 
-  it should "not register any resources with no objects" in {
+  val hardCodedResourceCount = 1
+
+  it should s"register only ${hardCodedResourceCount} resources with no objects" in {
     val f = defaultFixture
     val uut = f.app
     f.testModule.resourceConfig.getClasses should not be (null)
     f.testModule.resourceConfig.getSingletons should not be (null)
-    f.testModule.resourceConfig.resourceCount should be (0)
+    f.testModule.resourceConfig.resourceCount shouldBe hardCodedResourceCount
   }
 
   it should "register resources of complete schema" in {
@@ -123,6 +132,41 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val registeredResources = resourceConfig.getResources
     val noPartitionResources = registeredResources.filter(r => r.getPath.equals("/no_partition"))
     noPartitionResources.size shouldBe 2
+  }
+
+  it should "respond to schema requests" in {
+    val f = namedFixture("complete")
+
+    val result: Response = f.test.target("/schema").request().get()
+    result shouldBeOfFamily SUCCESSFUL
+
+    f.test.tearDown
+  }
+
+  "The schema resource" should "report accurate schema information" in {
+    val f = namedFixture("complete")
+    val result: Response = f.test.target("/schema").request().get()
+    result shouldBeOfFamily SUCCESSFUL
+
+    val jsonResult = result.readEntity(classOf[String])
+    val schemaMap = f.app.mapper.readValue(jsonResult, classOf[Map[String, Map[String, String]]])
+    schemaMap shouldEqual Map (
+      "foo" -> Map (
+        "partition" -> "text",
+        "range" -> "text",
+        "time" -> "timeuuid",
+        "data" -> "blob"
+      ),
+      "bar" -> Map (
+        "partition" -> "text",
+        "time" -> "timeuuid",
+        "data" -> "blob"
+      ),
+      "no_partition" -> Map (
+        "time" -> "timeuuid",
+        "data" -> "blob"
+      )
+    )
   }
 
   "The resource resource" should "ask the DataSource for data on HTTP GET with no range keys" in {
