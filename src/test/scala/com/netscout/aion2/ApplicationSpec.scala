@@ -22,6 +22,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
   import scala.collection.JavaConversions._
   import javax.ws.rs.core.Response.Status.Family._
+  import javax.ws.rs.core.MediaType._
 
   class ApplicationJerseyTest (
     val application: JAXRSApplication
@@ -61,6 +62,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val injector = Guice.createInjector(
       TypesafeConfigModule.fromConfig(namedConfig(name)),
       JacksonModule,
+      Slf4jLoggerModule,
       tModule)
 
     injector.instance[Application]
@@ -87,19 +89,17 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     }
   }
 
-  it should "be initializable with minimal configuration" in {
+  "An Application" should "be initializable with minimal configuration" in {
     val uut = defaultApplication
     uut should not be (null)
   }
 
-  val hardCodedResourceCount = 1
-
-  it should s"register only ${hardCodedResourceCount} resources with no objects" in {
+  it should s"register only hard coded resources with no objects" in {
     val f = defaultFixture
     val uut = f.app
     f.testModule.resourceConfig.getClasses should not be (null)
     f.testModule.resourceConfig.getSingletons should not be (null)
-    f.testModule.resourceConfig.resourceCount shouldBe hardCodedResourceCount
+    f.testModule.resourceConfig.resourceCount shouldBe f.app.hardCodedResources.size
   }
 
   it should "register resources of complete schema" in {
@@ -140,6 +140,15 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val result: Response = f.test.target("/schema").request().get()
     result shouldBeOfFamily SUCCESSFUL
 
+    f.test.tearDown
+  }
+
+  it should "respond to version requests" in {
+    val f = defaultFixture
+
+    val result: Response = f.test.target("/version").request.get
+    result shouldBeOfFamily SUCCESSFUL
+    result.getMediaType shouldBe TEXT_PLAIN_TYPE 
     f.test.tearDown
   }
 

@@ -28,6 +28,7 @@ dependencies {
     compile "net.codingwell:scala-guice_${scalaVersion}:${guiceVersion}"
     compile "com.github.racc:typesafeconfig-guice:+"
     compile "org.yaml:snakeyaml:1.+"
+    compile "org.slf4j:slf4j-api:1+"
 
     // Test-only dependencies
     testCompile "org.scalatest:scalatest_${scalaVersion}:2+"
@@ -39,6 +40,20 @@ dependencies {
 
     scoverage "org.scoverage:scalac-scoverage-plugin_${scalaVersion}:1+"
     scoverage "org.scoverage:scalac-scoverage-runtime_${scalaVersion}:1+"
+}
+
+// This task creates a version.properties file so that the version of the
+// project can be read at runtime
+task createVersionProperties(dependsOn: processResources) << {
+    Properties p = new Properties()
+    p['version'] = project.version.toString()
+    new File("$buildDir/resources/main/com/netscout/aion2/version.properties").withWriter { w ->
+        p.store w, null
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
 }
 
 compileScala {

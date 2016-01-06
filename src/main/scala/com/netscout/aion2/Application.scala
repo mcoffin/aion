@@ -5,7 +5,7 @@ import com.github.racc.tscg.TypesafeConfigModule
 import com.google.inject.{AbstractModule, Guice, Inject}
 import com.netscout.aion2.except._
 import com.netscout.aion2.model.DataSource
-import com.netscout.aion2.resources.Schema
+import com.netscout.aion2.resources._
 import com.typesafe.config.ConfigFactory
 
 import javax.ws.rs.core.{Application => JAXRSApplication}
@@ -33,6 +33,7 @@ class ApplicationWrapper extends ResourceConfig {
     SchemaProviderModule,
     DataSourceModule,
     JacksonModule,
+    Slf4jLoggerModule,
     new ApplicationWrapperModule(this))
 
   val realApplication = injector.instance[Application]
@@ -43,7 +44,8 @@ class Application @Inject() (
   val dataSource: DataSource,
   val mapper: ObjectMapper,
   val resourceConfig: ResourceConfig,
-  val schemaResource: Schema
+  val schemaResource: Schema,
+  val versionResource: VersionResource
 ) {
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
@@ -188,5 +190,7 @@ class Application @Inject() (
   // This registers all the resources found by the default schema providers
   builtinSchemaProviders.foreach(registerSchemaProvider(_))
 
-  ResourceConfigUtils.register(resourceConfig, schemaResource)
+  // Now register all hard-coded resources (for metadata like /schema and /version)
+  val hardCodedResources = Seq(schemaResource, versionResource)
+  hardCodedResources.foreach(ResourceConfigUtils.register(resourceConfig, _))
 }
