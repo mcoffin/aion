@@ -73,3 +73,11 @@ def scoverageCoberturaPath = "${buildDir}/reports/scoverage/cobertura.xml"
 coveralls {
     coberturaReportPath = scoverageCoberturaPath
 }
+
+task scoverageCopyVersionProperties(type: Copy, dependsOn: createVersionProperties) {
+    from "$buildDir/resources/main/com/netscout/aion2"
+    include "*version.properties"
+    into "$buildDir/resources/scoverage/com/netscout/aion2"
+}
+
+scoverageClasses.dependsOn scoverageCopyVersionProperties
