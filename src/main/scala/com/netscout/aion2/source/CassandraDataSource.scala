@@ -36,6 +36,10 @@ class CassandraDataSource @Inject() (
       }
     }
 
+    // TODO: This logic should really be in the Application's data binding mechanism
+    /**
+     * Parses strings (from query parameters) to their cassandra representation
+     */
     def parseToCassandraObject(field: String, value: String): AnyRef = {
       Option(obj.fields.get(field)) match {
         case Some("timeuuid") => UUID.fromString(value)
@@ -43,6 +47,31 @@ class CassandraDataSource @Inject() (
         case Some("json") => mapper.readTree(value)
         case _ => field
       }
+    }
+
+    /**
+     * Parses any aion objects that were stored differently in cassandra back in to their Aion
+     * representations
+     *
+     * @param key the name of the field we're transforming
+     * @param aionObject the Aion value of the field we're transforming
+     * @return the Aion representation of the field's value
+     */
+    def aionResponseForQueryObject(key: String, queryObject: AnyRef) = Option(obj.fields.get(key)) match {
+      case Some("json") => mapper.readTree(queryObject.toString)
+      case _ => queryObject
+    }
+
+    /**
+     * Transforms aion objects in to the representation that they will be stored in in cassandra
+     *
+     * @param key the name of the field we're transforming
+     * @param aionObject the Aion value of the field we're transforming
+     * @return The Cassandra representation of the field's value
+     */
+    def queryObjectForAionResponse(key: String, aionObject: AnyRef) = Option(obj.fields.get(key)) match {
+      case Some("json") => mapper.writeValueAsString(aionObject)
+      case _ => aionObject
     }
   }
 
@@ -140,19 +169,22 @@ class CassandraDataSource @Inject() (
 
     // Now transition any aion types that aren't cassandra types to their matching storage type
     val cassandraFullValues = fullValues.map(_ match {
-      case (k, v) => {
-        (k, cassandraTypeForType(Option(obj.fields.get(k)).get), v)
-      }
-    }).map(_ match {
-      case (k, "json", v) => {
-        val jsonSerialized = mapper.writeValueAsString(v)
-        (k, jsonSerialized)
-      }
-      case (k, _, v) => (k, v)
-    }).toMap
+      case (k, v) => (k, obj.queryObjectForAionResponse(k, v))
+    })
 
+    // Here we pull the keys / values out of the tuples.
+    // Alternatively, we could go though `toMap.keys` and `toMap.values`
+    // but since that has to hash there would likely be a performance hit
+    val fieldKeys = cassandraFullValues.map(_ match {
+      case (k, _) => k
+    })
+    val fieldValues = cassandraFullValues.map(_ match {
+      case (_, v) => v
+    })
+
+    // Now just build and run the query
     val insertStmt = QueryBuilder.insertInto(keyspaceName, index.name)
-      .values(cassandraFullValues.keys.toList, cassandraFullValues.values.toList)
+      .values(fieldKeys.toList, fieldValues.toList)
     session.execute(insertStmt)
   }
 
@@ -234,6 +266,8 @@ class CassandraDataSource @Inject() (
       val columnsToGrab = row.getColumnDefinitions.map(_.getName)
       columnsToGrab.map(f => {
         (selectionsReverseIndex.get(f).get, row.getObject(f))
+      }).map(_ match {
+        case (k, v) => (k, obj.aionResponseForQueryObject(k, v))
       })
     })
   }
