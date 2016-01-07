@@ -34,8 +34,5 @@ class VersionResource @Inject() (
 
   @GET
   @Produces(Array(TEXT_PLAIN))
-  def getVersion = getProperty("version") match {
-    case Some(version) => version
-    case None => throw new WebApplicationException(NOT_FOUND)
-  }
+  def getVersion = getProperty("version").getOrElse(throw new WebApplicationException(NOT_FOUND))
 }

@@ -28,7 +28,7 @@ class CassandraDataSource @Inject() (
      */
     def selectionOfField(field: String) = {
       Option(obj.fields.get(field)) match {
-        case Some("timeuuid") => s"system.dateOf(${field})"
+        case Some("timeuuid") => s"system.dateof(${field})"
         case _ => field
       }
     }
@@ -145,7 +145,8 @@ class CassandraDataSource @Inject() (
     val whereClauses = partitionClauses ++ splitClauses ++ rangeClauses
 
     val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
-    val fieldSelections = selectedFields.map(obj.selectionOfField(_))
+    val selectionsReverseIndex = selectedFields.map(f => (obj.selectionOfField(f), f)).toMap
+    val fieldSelections = selectionsReverseIndex.keys
 
     val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM ${index.columnFamilyName}"
     val minMaxStmtStr = minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"
@@ -164,13 +165,19 @@ class CassandraDataSource @Inject() (
           QueryBuilder.eq(p, partitionKey.get(p).get)
         })
         val middleQueries = fullRows.map(rowKey => {
-          var stmt = QueryBuilder.select(selectedFields.toArray : _*)
-            .from(keyspaceName, index.name)
+          var stmt = QueryBuilder.select()
+          selectedFields.foreach(f => {
+            obj.fields.get(f) match {
+              case "timeuuid" => stmt = stmt.fcall("system.dateOf", QueryBuilder.column(f))
+              case _ => stmt = stmt.column(f)
+            }
+          })
+          var unrestrictedStmt = stmt.from(keyspaceName, index.name)
             .where(QueryBuilder.eq(splitRowKey(index.split.column), rowKey))
           middlePartitionClauses.foreach(c => {
-            stmt = stmt.and(c)
+            unrestrictedStmt = unrestrictedStmt.and(c)
           })
-          stmt
+          unrestrictedStmt
         })
         partialQueries ++ middleQueries
       }
@@ -179,7 +186,10 @@ class CassandraDataSource @Inject() (
 
     val results = queries.map(session.execute(_)).map(_.all).reduce(_++_)
     results.map(row => {
-      selectedFields.map(f => (f, row.getObject(obj.selectionOfField(f))))
+      val columnsToGrab = row.getColumnDefinitions.map(_.getName)
+      columnsToGrab.map(f => {
+        (selectionsReverseIndex.get(f).get, row.getObject(f))
+      })
     })
   }
 }
