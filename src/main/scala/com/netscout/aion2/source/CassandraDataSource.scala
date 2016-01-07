@@ -57,9 +57,15 @@ class CassandraDataSource @Inject() (
      * @param aionObject the Aion value of the field we're transforming
      * @return the Aion representation of the field's value
      */
-    def aionResponseForQueryObject(key: String, queryObject: AnyRef) = Option(obj.fields.get(key)) match {
-      case Some("json") => mapper.readTree(queryObject.toString)
-      case _ => queryObject
+    def aionResponseForQueryObject(key: String, maybeQueryObject: AnyRef) = {
+      val field = for {
+        queryObject <- Option(maybeQueryObject)
+        fType <- Option(obj.fields.get(key))
+      } yield (queryObject, fType)
+      field match {
+        case Some((queryObject, "json")) => mapper.readTree(queryObject.toString)
+        case _ => maybeQueryObject
+      }
     }
 
     /**
