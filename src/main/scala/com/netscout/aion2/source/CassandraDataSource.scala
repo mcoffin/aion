@@ -10,6 +10,7 @@ class CassandraDataSource @Inject() (
   @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceName: String
 ) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
+  import java.util.UUID
   import scala.collection.JavaConversions._
 
   val cluster = Cluster.builder()
@@ -29,6 +30,14 @@ class CassandraDataSource @Inject() (
     def selectionOfField(field: String) = {
       Option(obj.fields.get(field)) match {
         case Some("timeuuid") => s"system.dateof(${field})"
+        case _ => field
+      }
+    }
+
+    def parseToCassandraObject(field: String, value: String): AnyRef = {
+      Option(obj.fields.get(field)) match {
+        case Some("timeuuid") => UUID.fromString(value)
+        case Some("uuid") => UUID.fromString(value)
         case _ => field
       }
     }
@@ -72,18 +81,13 @@ class CassandraDataSource @Inject() (
           case (k, v) => s"${k} ${v}"
         })
         obj.indices.map(index => {
-          val rangeKeyDefinitionPrefix = if (index.range.size > 0) {
-            ", "
-          } else {
-            ""
-          }
           val partitionKeyPrefix = if (index.partition.size > 0) {
             ", "
           } else {
             ""
           }
-          val rangeKeyDefinition = rangeKeyDefinitionPrefix ++ (index.range mkString ", ")
-          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "})${rangeKeyDefinition}))"
+          val rangeKeyDefinition = (Seq(index.split.column) ++ index.range) mkString ", "
+          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${rangeKeyDefinition}))"
         })
       }).reduce(_++_).foreach(session.execute(_))
     }
@@ -107,7 +111,7 @@ class CassandraDataSource @Inject() (
       case INT => classOf[Int]
       case TIMESTAMP => classOf[java.util.Date]
       case TIMEUUID => classOf[java.util.UUID]
-      case UUID => classOf[java.util.UUID]
+      case DataType.Name.UUID => classOf[java.util.UUID]
       case TEXT => classOf[String]
       case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
     }
@@ -122,8 +126,19 @@ class CassandraDataSource @Inject() (
     session.execute(insertStmt)
   }
 
-  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef], rangeKeys: Map[String, AnyRef]) = {
+  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKeyOrig: Map[String, AnyRef], rangeKeysOrig: Map[String, AnyRef]) = {
     import com.datastax.driver.core.Row
+
+    // First, do any parsing we may have to do on the keys before moving on
+    def cassandraObjectMap(original: Map[String, AnyRef]): Map[String, AnyRef] = {
+      original.map(_ match  {
+        case (k, v: String) => (k, obj.parseToCassandraObject(k, v))
+        case (k, v) => (k, v)
+      }).toMap
+    }
+
+    val partitionKey = cassandraObjectMap(partitionKeyOrig)
+    val rangeKeys = cassandraObjectMap(rangeKeysOrig)
 
     val partitionClauses = index.partition.map(p => s"${p} = ?")
 
