@@ -18,6 +18,15 @@ import org.mockito.BDDMockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 
+object ApplicationSpec {
+  import com.typesafe.config.ConfigFactory
+
+  /**
+   * Gets a config file with a specific name
+   */
+  def namedConfig(name: String) = ConfigFactory.parseResources(this.getClass, name ++ ".json")
+}
+
 class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.typesafe.config.ConfigFactory
   import scala.collection.JavaConversions._
@@ -49,8 +58,6 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     }
   }
 
-  def namedConfig(name: String) = ConfigFactory.parseResources(classOf[ApplicationSpec], name ++ ".json")
-
   def namedApplication(name: String, testModule: Option[TestModule] = None) = {
     import net.codingwell.scalaguice.InjectorExtensions._
 
@@ -60,7 +67,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     }
 
     val injector = Guice.createInjector(
-      TypesafeConfigModule.fromConfig(namedConfig(name)),
+      TypesafeConfigModule.fromConfig(ApplicationSpec.namedConfig(name)),
       JacksonModule,
       Slf4jLoggerModule,
       AionResourceModule,
