@@ -115,31 +115,16 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val uut = f.app
     val resourceConfig = f.testModule.resourceConfig
     val registeredResources = resourceConfig.getResources
-    val expectedIndexCount = 3
-    registeredResources.size should be (2 * expectedIndexCount)
     val resourcePaths = registeredResources.map(r => (r.getPath, r)).toMap
 
-    val fullIndexPath = "/foo"
-    val fullResourcePath = "/foo/{partition}{rangeKeys : ((/([\\w\\.\\d\\-%]+)){1,1})?}"
-    resourcePaths.keys.contains(fullIndexPath) shouldBe true
-    resourcePaths.keys.contains(fullResourcePath) shouldBe true
-
-    val noRangeIndexPath = "/bar"
-    val noRangeResourcePath = "/bar/{partition}"
-    resourcePaths.keys.contains(noRangeIndexPath) shouldBe true
-    resourcePaths.keys.contains(noRangeResourcePath) shouldBe true
-
-    val noPartitionPath = "/no_partition"
-    resourcePaths.keys.contains(noPartitionPath) shouldBe true
-  }
-
-  it should "register two resources of identical path for indices without partition keys" in {
-    val f = namedFixture("complete")
-    val uut = f.app
-    val resourceConfig = f.testModule.resourceConfig
-    val registeredResources = resourceConfig.getResources
-    val noPartitionResources = registeredResources.filter(r => r.getPath.equals("/no_partition"))
-    noPartitionResources.size shouldBe 2
+    val expectedPaths = Seq(
+      "/foo/single_partition/{partition}",
+      "/foo/double_partition/{partition}/{range}",
+      "/foo/no_partition"
+    )
+    for (p <- expectedPaths) {
+      resourcePaths.contains(p) shouldBe true
+    }
   }
 
   it should "respond to schema requests" in {
@@ -173,20 +158,11 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
         "range" -> "text",
         "time" -> "timeuuid",
         "data" -> "blob"
-      ),
-      "bar" -> Map (
-        "partition" -> "text",
-        "time" -> "timeuuid",
-        "data" -> "blob"
-      ),
-      "no_partition" -> Map (
-        "time" -> "timeuuid",
-        "data" -> "blob"
       )
     )
   }
 
-  "The resource resource" should "ask the DataSource for data on HTTP GET with no range keys" in {
+  "The resource resource" should "ask the DataSource for data on HTTP GET on an index with multiple partition keys" in {
     import java.time.Instant
     import java.time.temporal.ChronoUnit._
 
@@ -194,12 +170,12 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // given
     f.testModule.setupTestDataTypes
-    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
 
     // when
     val now = Instant.now
     val end = now.plus(1, HOURS)
-    val result: Response = f.test.target(s"/bar/somePartition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+    val result: Response = f.test.target(s"/foo/single_partition/somePartition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
 
     // then
     result.getStatus shouldBe 200
@@ -207,36 +183,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
       anyObject(),
       anyObject(),
       anyObject(),
-      MockitoMatchers.eq(Map("partition" -> "somePartition")),
-      MockitoMatchers.eq(Map())
-    ) // TODO: better matching of the QueryStrategy
-
-    f.test.tearDown
-  }
-
-  it should "ask the DataSource for data on HTTP GET on a full index with no range keys" in {
-    import java.time.Instant
-    import java.time.temporal.ChronoUnit._
-
-    val f = namedFixture("complete")
-
-    // given
-    f.testModule.setupTestDataTypes
-    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
-
-    // when
-    val now = Instant.now
-    val end = now.plus(1, HOURS)
-    val result: Response = f.test.target(s"/foo/somePartition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
-
-    // then
-    result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(
-      anyObject(),
-      anyObject(),
-      anyObject(),
-      MockitoMatchers.eq(Map("partition" -> "somePartition")),
-      MockitoMatchers.eq(Map())
+      MockitoMatchers.eq(Map("partition" -> "somePartition"))
     ) // TODO: better matching of the QueryStrategy
   }
 
@@ -248,12 +195,12 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // given
     f.testModule.setupTestDataTypes
-    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
 
     // when
     val now = Instant.now
     val end = now.plus(1, HOURS)
-    val result: Response = f.test.target(s"/foo/somePartition/someRange").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+    val result: Response = f.test.target(s"/foo/double_partition/somePartition/someRange").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
 
     // then
     result.getStatus shouldBe 200
@@ -261,8 +208,7 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
       anyObject(),
       anyObject(),
       anyObject(),
-      MockitoMatchers.eq(Map("partition" -> "somePartition")),
-      MockitoMatchers.eq(Map("range" -> "someRange"))
+      MockitoMatchers.eq(Map("partition" -> "somePartition", "range" -> "someRange"))
     ) // TODO: better matching of the QueryStrategy
   }
 
@@ -274,15 +220,15 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // given
     f.testModule.setupTestDataTypes
-    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
 
     // when
     val now = Instant.now
     val end = now.plus(1, HOURS)
-    val result: Response = f.test.target("/foo").queryParam("from", now.toString).queryParam("to", now.toString).request().get()
+    val result: Response = f.test.target("/foo/single_partition").queryParam("from", now.toString).queryParam("to", now.toString).request().get()
 
     // then
-    result.getStatus shouldBe 405
+    result.getStatus shouldBe 404
   }
 
   it should "ask the DataSource for data on HTTP GET with no partition / range keys" in {
@@ -293,16 +239,16 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // given
     f.testModule.setupTestDataTypes
-    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
+    given(f.testModule.dataSource.executeQuery(anyObject(), anyObject(), anyObject(), anyObject())).willReturn(Seq())
 
     // when
     val now = Instant.now
     val end = now.plus(1, HOURS)
-    val result: Response = f.test.target(s"/no_partition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
+    val result: Response = f.test.target(s"/foo/no_partition").queryParam("from", now.toString).queryParam("to", end.toString).request().get()
 
     // then
     result.getStatus shouldBe 200
-    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), MockitoMatchers.eq(Map()), MockitoMatchers.eq(Map())) // TODO: better matching of the QueryStrategy
+    verify(f.testModule.dataSource).executeQuery(anyObject(), anyObject(), anyObject(), MockitoMatchers.eq(Map())) // TODO: better matching of the QueryStrategy
 
     f.test.tearDown
   }
@@ -315,14 +261,14 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
 
     f.testModule.setupTestDataTypes
 
-    val result: Response = f.test.target(s"/bar").request().post(Entity.json(s"""{
+    val result: Response = f.test.target(s"/foo").request().post(Entity.json(s"""{
       "partition": "somePartition",
       "time": "${UUIDs.timeBased}",
       "data": ""
     }"""))
 
     result.getStatus shouldBe 201
-    verify(f.testModule.dataSource).insertQuery(anyObject(), anyObject(), anyObject(), anyObject())
+    verify(f.testModule.dataSource).insertQuery(anyObject(), anyObject())
 
     f.test.tearDown
   }

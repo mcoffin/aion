@@ -54,65 +54,72 @@ class Application @Inject() (
 
   val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(configSchemaProvider)
 
-  implicit class AionIndexResource(val index: AionIndexConfig) {
-    /**
-     * Gets the path for the element JAX-RS resources for this index
-     */
-    def resourcePath = {
-      val partitionPathKeys = index.partition.map(p => s"{$p}")
-      val path = (Seq(index.name) ++ partitionPathKeys) mkString "/"
-      val rangeKeysParameter = if (index.range.size > 0) {
-        s"{rangeKeys : ((/([\\w\\.\\d\\-%]+)){1,${index.range.size}})?}"
-      } else {
-        ""
-      }
-
-      "/" ++ path ++ rangeKeysParameter
-    }
-
-    /**
-     * Gets a path for the root JAX-RS resource for this index
-     */
-    def indexPath = s"/${index.name}"
-  }
-
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
     import javax.ws.rs.core.{Response, StreamingOutput}
     import javax.ws.rs.core.MediaType._
 
-    /**
-     * Dynamically creates JAX-RS resources for a given Aion object description
-     *
-     * @param obj the aion object for which to build resources
-     */
-    def resources = obj.indices.map(index => {
+    val resourcePath = s"/${obj.name}"
+
+    def indexResourcePath(index: AionIndexConfig) = {
+      val partitionPathKeys = index.partition.map(p => s"{$p}")
+      (Seq(resourcePath, index.name) ++ partitionPathKeys) mkString "/"
+    }
+
+    def collectionResource = {
       import javax.ws.rs.container.ContainerRequestContext
       import org.glassfish.jersey.process.Inflector
       import org.glassfish.jersey.server.model.Resource
 
-      val splitStrategy = index.split.strategy.strategy
-
-      // Jersey provides a programmatic API for building JAX-RS resources
-      // @see [[org.glassfish.jersey.server.model.Resource.Builder
       val resourceBuilder = Resource.builder()
-      resourceBuilder.path(index.resourcePath)
+      resourceBuilder.path(resourcePath)
+
+      resourceBuilder.addMethod("POST").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
+        override def apply(request: ContainerRequestContext) = {
+          import com.fasterxml.jackson.core.JsonParseException
+          import com.fasterxml.jackson.databind.{JsonMappingException, JsonNode}
+          import javax.ws.rs.core.Response.Status._
+
+          try {
+            val values = mapper.readTree(request.getEntityStream)
+            val mappedValues = values.fieldNames.map(fieldName => {
+              val typeName = Option(obj.fields.get(fieldName)) match {
+                case Some(name) => name
+                case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}")
+              }
+              val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new RuntimeException("This shouldn't happen if Jackson returns consistent data"))
+              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
+              (fieldName, newV.asInstanceOf[AnyRef])
+            }).toMap
+            dataSource.insertQuery(obj, mappedValues)
+            Response.status(CREATED).build()
+          } catch {
+            case (jme: JsonMappingException) => throw new IllegalQueryException("Error mapping JSON input to objects", jme)
+            case (jpe: JsonParseException) => throw new IllegalQueryException("Error parsing JSON input", jpe)
+          }
+        }
+      })
+      resourceBuilder.build()
+    }
+
+    def indexResources = obj.indices.map(index => {
+      import javax.ws.rs.container.ContainerRequestContext
+      import org.glassfish.jersey.process.Inflector
+      import org.glassfish.jersey.server.model.Resource
+
+      val resourceBuilder = Resource.builder()
+      resourceBuilder.path(indexResourcePath(index))
+
+      val splitStrategy = index.split.strategy.strategy
 
       resourceBuilder.addMethod("GET").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
         override def apply(request: ContainerRequestContext) = {
           val info = request.getUriInfo
           val queryParameters = info.getQueryParameters
-
-          val queryStrategy = splitStrategy.strategyForQuery(info.getQueryParameters)
-
           val pathParameters = info.getPathParameters.mapValues(_.head).toMap
 
-          val rangeKeyMap = (for {
-            rangeKeysStr <- pathParameters.get("rangeKeys")
-          } yield (index.range zip rangeKeysStr.split("/").slice(1, rangeKeysStr.size)).toMap).getOrElse(Map())
+          val queryStrategy = splitStrategy.strategyForQuery(queryParameters)
 
-          val partitionParameters = pathParameters.filterKeys(key => !(key equals "rangeKeys"))
-
-          val results = dataSource.executeQuery(obj, index, queryStrategy, partitionParameters.toMap, rangeKeyMap).map(_.toMap)
+          val results = dataSource.executeQuery(obj, index, queryStrategy, pathParameters).map(_.toMap)
           val stream = new StreamingOutput() {
             import java.io.OutputStream
 
@@ -123,46 +130,13 @@ class Application @Inject() (
           Response.ok(stream).build()
         }
       })
+      resourceBuilder.build()
+    })
 
-      val indexResourceBuilder = Resource.builder()
-      indexResourceBuilder.path(index.indexPath)
-
-      indexResourceBuilder.addMethod("POST").produces(APPLICATION_JSON).handledBy(new Inflector[ContainerRequestContext, Response] {
-        override def apply(request: ContainerRequestContext) = {
-          import com.fasterxml.jackson.core.JsonParseException
-          import com.fasterxml.jackson.databind.{JsonMappingException, JsonNode}
-          import javax.ws.rs.core.Response.Status._
-
-          try {
-            val values = mapper.readTree(request.getEntityStream)
-            val newValues = values.fieldNames.map(fieldName => {
-              val typeName = Option(obj.fields.get(fieldName)) match {
-                case Some(name) => name
-                case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for index ${index.name}")
-              }
-              val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new Exception("This shouldn't happen if Jackson returns consistent data"))
-              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
-              (fieldName, newV.asInstanceOf[AnyRef])
-            }).toMap
-            val maybeSplitKeyValue = for {
-              realValue <- newValues.get(index.split.column)
-              roundedValue <- Some(splitStrategy.rowKey(realValue.asInstanceOf[AnyRef]))
-            } yield roundedValue
-            val splitKeyValue = maybeSplitKeyValue match {
-              case Some(x) => x
-              case None => throw new IllegalQueryException("The split key value must be present for an insert")
-            }
-            dataSource.insertQuery(obj, index, newValues, splitKeyValue.asInstanceOf[AnyRef])
-            Response.status(CREATED).build()
-          } catch {
-            case (jme: JsonMappingException) => throw new IllegalQueryException("Error mapping JSON input to values", jme)
-            case (jpe: JsonParseException) => throw new IllegalQueryException("Error parsing JSON input", jpe)
-          }
-        }
-      })
-
-      Set(resourceBuilder.build(), indexResourceBuilder.build())
-    }).reduce(_++_)
+    /**
+     * Dynamically creates JAX-RS resources for this Aion object description
+     */
+    def resources = indexResources :+ collectionResource
   }
 
   /**
@@ -184,7 +158,7 @@ class Application @Inject() (
     // If we have 0 resources, reduce() will cause an error
     if (resourceLists.size > 0) {
       val resourceList = resourceLists.reduce(_++_)
-      resourceConfig.registerResources(resourceList)
+      resourceConfig.registerResources(resourceList : _*)
     }
   }
 
