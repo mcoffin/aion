@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 import scala.beans.BeanProperty
 
 class AionObjectConfig {
-  @BeanProperty var fields: java.util.Map[String, Object] = null
+  @BeanProperty var fields: java.util.Map[String, String] = null
   @BeanProperty var indices: java.util.List[AionIndexConfig] = null
 }
 
