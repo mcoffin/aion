@@ -24,10 +24,8 @@ class Schema @Inject() (
   }
 
   private def fieldsSchema = schema.map(obj => {
-    obj.indices.map(index => {
-      (index.name, obj.fields)
-    })
-  }).reduce(_++_).toMap
+    (obj.name, obj.fields)
+  }).toMap
 
   @GET
   @Produces(Array(APPLICATION_JSON))

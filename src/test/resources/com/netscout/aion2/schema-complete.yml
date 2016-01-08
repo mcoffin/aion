@@ -1,12 +1,13 @@
 ---
 objects:
-  - fields:
+  - name: foo
+    fields:
       partition: text
       range: text
       time: timeuuid
       data: blob
     indices:
-      - name: foo
+      - name: single_partition
         partition:
           - partition
         split:
@@ -15,33 +16,22 @@ objects:
             name: duration
             config:
               duration: P1D
-        range:
+        clustering:
+          field: time
+          order: DESC
+      - name: double_partition
+        partition:
+          - partition
           - range
-        clustering:
-          field: time
-          order: DESC
-  - fields:
-      partition: text
-      time: timeuuid
-      data: blob
-    indices:
-      - name: bar
-        partition:
-          - partition
         split:
           column: time
           strategy:
             name: duration
             config:
               duration: P1D
-        range: []
         clustering:
           field: time
           order: DESC
-  - fields:
-      time: timeuuid
-      data: blob
-    indices:
       - name: no_partition
         partition: []
         split:
@@ -50,7 +40,6 @@ objects:
             name: duration
             config:
               duration: P1D
-        range: []
         clustering:
           field: time
           order: DESC

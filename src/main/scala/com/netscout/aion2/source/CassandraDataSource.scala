@@ -90,17 +90,6 @@ class CassandraDataSource @Inject() (
   }
 
   /**
-   * Additional methods for AionIndexConfig used by
-   * [[com.netscout.aion2.source.CassandraDataSource]]
-   */
-  implicit class CassandraAionIndex(val idx: AionIndexConfig) {
-    /**
-     * Gets the fully qualified column family name for the index
-     */
-    def columnFamilyName = s"${keyspaceName}.${idx.name}"
-  }
-
-  /**
    * Gets the name of the split row key for a given column
    *
    * @param columnName the name of the split column
@@ -132,8 +121,7 @@ class CassandraDataSource @Inject() (
           } else {
             ""
           }
-          val rangeKeyDefinition = (Seq(index.split.column) ++ index.range) mkString ", "
-          s"CREATE TABLE IF NOT EXISTS ${index.columnFamilyName} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${rangeKeyDefinition}))"
+          s"CREATE TABLE IF NOT EXISTS ${keyspaceName}.${columnFamilyName(obj, index)} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${index.split.column}))"
         })
       }).reduce(_++_).foreach(session.execute(_))
     }
@@ -169,33 +157,51 @@ class CassandraDataSource @Inject() (
     }
   }
 
-  override def insertQuery(obj: AionObjectConfig, index: AionIndexConfig, values: Map[String, AnyRef], splitKeyValue: AnyRef) {
-    // Add in the split key information to the values map
-    val fullValues = values ++ Map(splitRowKey(index.split.column) -> splitKeyValue)
+  /**
+   * Gets a column family name for a given object and index pairing
+   */
+  private def columnFamilyName(obj: AionObjectConfig, index: AionIndexConfig) = s"${obj.name}_${index.name}"
 
-    // Now transition any aion types that aren't cassandra types to their matching storage type
-    val cassandraFullValues = fullValues.map(_ match {
-      case (k, v) => (k, obj.queryObjectForAionResponse(k, v))
+  override def insertQuery(obj: AionObjectConfig, values: Map[String, AnyRef]) {
+    import com.netscout.aion2.except._
+
+    val queries = obj.indices.map(index => {
+      val splitStrategy = index.split.strategy.strategy
+      val splitKeyValue = splitStrategy.rowKey(values.get(index.split.column) match {
+        case Some(v) => v
+        case None => throw new IllegalQueryException(s"The split key ${index.split.column} must be provided for index ${index.name}")
+      })
+
+      // Add in the row split key information to the values map
+      val fullValues = values ++ Map(splitRowKey(index.split.column) -> splitKeyValue)
+
+      // Now transition any aion types that aren't cassandra types to their matching storage type
+      val cassandraFullValues = fullValues.map(_ match {
+        case (k, v) => (k, obj.queryObjectForAionResponse(k, v))
+      })
+
+      // Here we pull the keys / values out of the tuples.
+      // Alternatively, we could go though `toMap.keys` and `toMap.values`
+      // but since that has to hash there would likely be a performance hit
+      val fieldKeys = cassandraFullValues.map(_ match {
+        case (k, _) => k
+      })
+      val fieldValues = cassandraFullValues.map(_ match {
+        case (_, v) => v
+      })
+
+      val insertStmt = QueryBuilder.insertInto(keyspaceName, columnFamilyName(obj, index))
+        .values(fieldKeys.toList, fieldValues.toList)
+      insertStmt
     })
 
-    // Here we pull the keys / values out of the tuples.
-    // Alternatively, we could go though `toMap.keys` and `toMap.values`
-    // but since that has to hash there would likely be a performance hit
-    val fieldKeys = cassandraFullValues.map(_ match {
-      case (k, _) => k
-    })
-    val fieldValues = cassandraFullValues.map(_ match {
-      case (_, v) => v
-    })
-
-    // Now just build and run the query
-    val insertStmt = QueryBuilder.insertInto(keyspaceName, index.name)
-      .values(fieldKeys.toList, fieldValues.toList)
-    session.execute(insertStmt)
+    // TODO: atomically batch queries
+    queries.foreach(session.execute(_))
   }
 
-  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKeyOrig: Map[String, AnyRef], rangeKeysOrig: Map[String, AnyRef]) = {
+  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKeyOrig: Map[String, AnyRef]) = {
     import com.datastax.driver.core.Row
+    import com.netscout.aion2.except._
 
     // First, do any parsing we may have to do on the keys before moving on
     def cassandraObjectMap(original: Map[String, AnyRef]): Map[String, AnyRef] = {
@@ -206,67 +212,83 @@ class CassandraDataSource @Inject() (
     }
 
     val partitionKey = cassandraObjectMap(partitionKeyOrig)
-    val rangeKeys = cassandraObjectMap(rangeKeysOrig)
 
-    val partitionClauses = index.partition.map(p => s"${p} = ?")
-
-    val lowRangeSuffix = Option(obj.fields.get(index.split.column)) match {
-      case Some("timeuuid") =>
-        "minTimeuuid(?)"
-      case _ => "?"
-    }
-
-    val highRangeSuffix = Option(obj.fields.get(index.split.column)) match {
-      case Some("timeuuid") =>
-        "maxTimeuuid(?)"
-      case _ => "?"
-    }
-
-    val splitClauses = Seq(s"${index.split.column} >= ${lowRangeSuffix}", s"${index.split.column} < ${highRangeSuffix}", s"${splitRowKey(index.split.column)} = ?")
-    val rangeKeyArr = rangeKeys.keys.toArray
-    val rangeClauses = rangeKeyArr.map(_ ++ " = ?")
-    val whereClauses = partitionClauses ++ splitClauses ++ rangeClauses
-
-    val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
-    val selectionsReverseIndex = selectedFields.map(f => (obj.selectionOfField(f), f)).toMap
-    val fieldSelections = selectionsReverseIndex.keys
-
-    val minMaxStmtSelect = s"SELECT ${fieldSelections mkString ", "} FROM ${index.columnFamilyName}"
-    val minMaxStmtStr = minMaxStmtSelect ++ s" WHERE ${whereClauses mkString " AND "}"
-    val minMaxStmt = session.prepare(minMaxStmtStr)
-    val partitionConstraints = index.partition.map(p => partitionKey.get(p).get)
-    val rangeConstraints = rangeKeyArr.map(rangeKeys.get(_).get)
-    val partialQueries = query.partialRows.map(rowKey => {
-      val variablesToBind = partitionConstraints ++ Seq(query.minimum, query.maximum, rowKey) ++ rangeConstraints
-      new BoundStatement(minMaxStmt).bind(variablesToBind : _*)
+    val partitionClauses = index.partition.map(p => {
+      val pValue = partitionKey.get(p) match {
+        case Some(v) => v
+        case None => throw new IllegalQueryException(s"Partition key parameter ${p} must be present to query against index ${index.name}")
+      }
+      QueryBuilder.eq(p, pValue)
     })
 
-    // Now for the middle queries
+    val lowRangeSuffix = Option(obj.fields.get(index.split.column)) match {
+      case Some("timeuuid") => QueryBuilder.fcall("minTimeuuid", query.minimum)
+      case _ => query.minimum
+    }
+    val highRangeSuffix = Option(obj.fields.get(index.split.column)) match {
+      case Some("timeuuid") => QueryBuilder.fcall("maxTimeuuid", query.minimum)
+      case _ => query.maximum
+    }
+
+    val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
+
+    val partialQueries = query.partialRows.map(rowKey => {
+      val splitClauses = Seq(
+        QueryBuilder.gte(index.split.column, lowRangeSuffix),
+        QueryBuilder.lt(index.split.column, highRangeSuffix),
+        QueryBuilder.eq(splitRowKey(index.split.column), rowKey)
+      )
+
+      var selectWithFields = QueryBuilder.select()
+      selectedFields.foreach(f => {
+        Option(obj.fields.get(f)) match {
+          case Some("timeuuid") => {
+            selectWithFields = selectWithFields.fcall("system.dateof", QueryBuilder.column(f))
+          }
+          case _ => {
+            selectWithFields = selectWithFields.column(f)
+          }
+        }
+      })
+
+      var finishedStmt = selectWithFields.from(keyspaceName, columnFamilyName(obj, index))
+        .where()
+      (partitionClauses ++ splitClauses).foreach(c => {
+        finishedStmt = finishedStmt.and(c)
+      })
+
+      finishedStmt
+    })
+
     val queries: Iterable[Statement] = query.fullRows match {
       case Some(fullRows) => {
-        val middlePartitionClauses = index.partition.map(p => {
-          QueryBuilder.eq(p, partitionKey.get(p).get)
-        })
         val middleQueries = fullRows.map(rowKey => {
           var stmt = QueryBuilder.select()
           selectedFields.foreach(f => {
-            obj.fields.get(f) match {
-              case "timeuuid" => stmt = stmt.fcall("system.dateOf", QueryBuilder.column(f))
-              case _ => stmt = stmt.column(f)
+            Option(obj.fields.get(f)) match {
+              case Some("timeuuid") => {
+                stmt = stmt.fcall("system.dateof", QueryBuilder.column(f))
+              }
+              case _ => {
+                stmt = stmt.column(f)
+              }
             }
           })
-          var unrestrictedStmt = stmt.from(keyspaceName, index.name)
+          var finishedStmt = stmt.from(keyspaceName, columnFamilyName(obj, index))
             .where(QueryBuilder.eq(splitRowKey(index.split.column), rowKey))
-          middlePartitionClauses.foreach(c => {
-            unrestrictedStmt = unrestrictedStmt.and(c)
-          })
-          unrestrictedStmt
+          for (pc <- partitionClauses) {
+            finishedStmt = finishedStmt.and(pc)
+          }
+          finishedStmt
         })
         partialQueries ++ middleQueries
       }
       case None => partialQueries
     }
 
+    val selectionsReverseIndex = selectedFields.map(f => (obj.selectionOfField(f), f)).toMap
+
+    // TODO: atomically batch queries
     val results = queries.map(session.execute(_)).map(_.all).reduce(_++_)
     results.map(row => {
       val columnsToGrab = row.getColumnDefinitions.map(_.getName)

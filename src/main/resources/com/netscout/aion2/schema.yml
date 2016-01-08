@@ -1,61 +1,13 @@
 ---
 objects:
-  - fields:
-      time: timeuuid
-      org: uuid
-      pulse: uuid
-      test: uuid
-      value: double
-    indices:
-      - name: test_data
-        partition:
-          - org
-          - pulse
-          - test
-        split:
-          column: time
-          strategy:
-            name: duration
-            config:
-              duration: P1D
-        range: []
-        clustering:
-          field: time
-          order: DESC
-  - fields:
-      time: timeuuid
-      org: uuid
-      pulse: uuid
-      test: uuid
-      granularity: bigint
-      min: double
-      max: double
-      averate: double
-      count: bigint
-    indices:
-      - name: test_data_rollups
-        partition:
-          - org
-          - pulse
-          - test
-        split:
-          column: time
-          strategy:
-            name: duration
-            config:
-              duration: P7D
-        range:
-          - granularity
-        clustering:
-          field: time
-          order: DESC
-  - fields:
+  - name: redstone_defect_stats
+    fields:
       time: timeuuid
       high: int
       medium: int
       low: int
     indices:
-      - name: redstone_defect_stats
+      - name: time
         partition: []
         split:
           column: time
@@ -63,42 +15,19 @@ objects:
             name: duration
             config:
               duration: P7D
-        range: []
         clustering:
           field: time
           order: DESC
-  - fields:
+  - name: series
+    fields:
       time: timeuuid
       org: uuid
       pulse: uuid
       test: uuid
-      event: json
-    indices:
-      - name: events
-        partition:
-          - org
-          - pulse
-          - test
-        split:
-          column: time
-          strategy:
-            name: duration
-            config:
-              duration: P1D
-        range: []
-        clustering:
-          field: time
-          order: desc
-  - fields:
-      time: timeuuid
-      org: uuid
-      pulse: uuid
-      test: uuid
-      type: int
       value: double
       event: json
     indices:
-      - name: series
+      - name: org_pulse_test
         partition:
           - org
           - pulse
@@ -109,8 +38,44 @@ objects:
             name: duration
             config:
               duration: P1D
-        range:
-          - type
+        clustering:
+          field: time
+          order: DESC
+      - name: org_pulse
+        partition:
+          - org
+          - pulse
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        clustering:
+          field: time
+          order: DESC
+      - name: org_test
+        partition:
+          - org
+          - test
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        clustering:
+          field: time
+          order: DESC
+      - name: org
+        partition:
+          - org
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
         clustering:
           field: time
           order: DESC
