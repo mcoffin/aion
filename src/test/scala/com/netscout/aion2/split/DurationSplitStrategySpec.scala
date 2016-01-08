@@ -177,4 +177,14 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
       uut.rowKey(somethingNotADate)
     }
   }
+
+  it should "return the day for day-bound split strategy" in {
+    val uut = new DurationSplitStrategy(Some(config("P1D")))
+    val start = Instant.EPOCH.plus(1, HOURS)
+    val end = start.plus(1, DAYS)
+    val strategy = uut.strategyForQuery(query(start, end))
+    val partialRows = strategy.partialRows
+    partialRows.head shouldEqual Date.from(Instant.EPOCH)
+    partialRows.last shouldEqual Date.from(Instant.EPOCH.plus(1, DAYS))
+  }
 }
