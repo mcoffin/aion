@@ -85,6 +85,7 @@ class Application @Inject() (
    * Convenience methods for working in the context of an AionObjectConfig
    */
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
+    import com.fasterxml.jackson.databind.JsonNode
     import javax.ws.rs.core.{Response, StreamingOutput}
     import javax.ws.rs.core.MediaType._
 
@@ -92,6 +93,11 @@ class Application @Inject() (
      * The resource path for this object
      */
     val resourcePath = s"/${obj.name}"
+
+    private def jsonToDataSourceObject(fieldName: String, jsonNode: JsonNode): AnyRef = {
+      val typeName = Option(obj.fields.get(fieldName)).getOrElse(throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}"))
+      mapper.treeToValue(jsonNode, dataSource.classOfType(typeName)).asInstanceOf[AnyRef]
+    }
 
     /**
      * The resource path for a given index inside of this object
@@ -124,16 +130,9 @@ class Application @Inject() (
 
             // Then go through and map each object to the class desired by the dataSource
             val mappedValues = values.fieldNames.map(fieldName => {
-              val typeName = Option(obj.fields.get(fieldName)) match {
-                case Some(name) => name
-                case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}")
-              }
               // This shouldn't return null since we're mapping over the values that the Jackson JsonNode told us that it had
               val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new RuntimeException("This shouldn't happen if Jackson returns consistent data"))
-
-              // Finally, use Jackson's ObjectMapper to map the JsonNode for this field to an instance of type desired by the dataSource
-              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
-              (fieldName, newV.asInstanceOf[AnyRef])
+              (fieldName, jsonToDataSourceObject(fieldName, jsonNode))
             }).toMap
 
             // Lastly, perform the insert query and respond appropriately
@@ -171,11 +170,17 @@ class Application @Inject() (
           // Since we only want a single value, we just map over each of the
           // value lists and return the first one.
           val pathParameters = info.getPathParameters.mapValues(_.head).toMap
+          val mappedPathParameters = pathParameters.map(_ match {
+            case (k, v) => {
+              val jsonNode = mapper.readTree(mapper.writeValueAsBytes(v))
+              (k, jsonToDataSourceObject(k, jsonNode))
+            }
+          })
 
           val queryStrategy = splitStrategy.strategyForQuery(queryParameters)
 
           // Actually execute the query against the dataSource
-          val results = dataSource.executeQuery(obj, index, queryStrategy, pathParameters).map(_.toMap)
+          val results = dataSource.executeQuery(obj, index, queryStrategy, mappedPathParameters).map(_.toMap)
 
           // We use a streaming output here so that we don't have to store the
           // entire result of the JSON serialization in memory while we're

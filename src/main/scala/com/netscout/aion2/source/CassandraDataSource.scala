@@ -36,19 +36,6 @@ class CassandraDataSource @Inject() (
       }
     }
 
-    // TODO: This logic should really be in the Application's data binding mechanism
-    /**
-     * Parses strings (from query parameters) to their cassandra representation
-     */
-    def parseToCassandraObject(field: String, value: String): AnyRef = {
-      Option(obj.fields.get(field)) match {
-        case Some("timeuuid") => UUID.fromString(value)
-        case Some("uuid") => UUID.fromString(value)
-        case Some("json") => mapper.readTree(value)
-        case _ => field
-      }
-    }
-
     /**
      * Parses any aion objects that were stored differently in cassandra back in to their Aion
      * representations
@@ -199,19 +186,9 @@ class CassandraDataSource @Inject() (
     queries.foreach(session.execute(_))
   }
 
-  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKeyOrig: Map[String, AnyRef]) = {
+  override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
     import com.datastax.driver.core.Row
     import com.netscout.aion2.except._
-
-    // First, do any parsing we may have to do on the keys before moving on
-    def cassandraObjectMap(original: Map[String, AnyRef]): Map[String, AnyRef] = {
-      original.map(_ match  {
-        case (k, v: String) => (k, obj.parseToCassandraObject(k, v))
-        case (k, v) => (k, v)
-      }).toMap
-    }
-
-    val partitionKey = cassandraObjectMap(partitionKeyOrig)
 
     val partitionClauses = index.partition.map(p => {
       val pValue = partitionKey.get(p) match {
