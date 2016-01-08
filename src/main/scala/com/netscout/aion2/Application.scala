@@ -16,10 +16,22 @@ import org.glassfish.jersey.server.ResourceConfig
 
 import scala.collection.JavaConversions._
 
+/**
+ * Small wrapper class to bootstrap the Application
+ *
+ * This will hopefully be replaced by an OSGi bootstrap solution
+ * if we want to do dynamic location of plugins / DataSources / SplitStrategies / etc.
+ */
 class ApplicationWrapper extends ResourceConfig {
   import com.netscout.aion2.inject._
   import net.codingwell.scalaguice.InjectorExtensions._
 
+  /**
+   * Small guice module for binding
+   * [[org.glassfish.jersey.server.ResourceConfig]] to this wrapper class so
+   * that the wrapper class can act as a JAX-RS
+   * [[javax.ws.rs.core.Application]].
+   */
   class ApplicationWrapperModule (
     val wrapper: ApplicationWrapper
   ) extends AbstractModule with ScalaModule {
@@ -40,6 +52,18 @@ class ApplicationWrapper extends ResourceConfig {
   val realApplication = injector.instance[Application]
 }
 
+/**
+ * Root class of Aion.
+ *
+ * Instantiating this class will register all of its generated resources with the
+ * provided ResourceConfig
+ *
+ * @param configSchemaProvider the schema provider to use
+ * @param mapper JSON object mapper
+ * @param resourceConfig The ResourceConfig instance with which to register JAX-RS resources
+ * @param schemaResource The schema resource (created by guice)
+ * @param versionResource The version resource (created by guice)
+ */
 class Application @Inject() (
   configSchemaProvider: SchemaProvider,
   val dataSource: DataSource,
@@ -52,19 +76,34 @@ class Application @Inject() (
   import com.netscout.aion2.source.CassandraDataSource
   import com.typesafe.config.ConfigException
 
+  /**
+   * List of built-in schema providers
+   */
   val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(configSchemaProvider)
 
+  /**
+   * Convenience methods for working in the context of an AionObjectConfig
+   */
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
     import javax.ws.rs.core.{Response, StreamingOutput}
     import javax.ws.rs.core.MediaType._
 
+    /**
+     * The resource path for this object
+     */
     val resourcePath = s"/${obj.name}"
 
+    /**
+     * The resource path for a given index inside of this object
+     */
     def indexResourcePath(index: AionIndexConfig) = {
       val partitionPathKeys = index.partition.map(p => s"{$p}")
       (Seq(resourcePath, index.name) ++ partitionPathKeys) mkString "/"
     }
 
+    /**
+     * Builds a JAX-RS resource for the collection represented by this object
+     */
     def collectionResource = {
       import javax.ws.rs.container.ContainerRequestContext
       import org.glassfish.jersey.process.Inflector
@@ -80,16 +119,24 @@ class Application @Inject() (
           import javax.ws.rs.core.Response.Status._
 
           try {
+            // First read the JSON AST without mapping any objects
             val values = mapper.readTree(request.getEntityStream)
+
+            // Then go through and map each object to the class desired by the dataSource
             val mappedValues = values.fieldNames.map(fieldName => {
               val typeName = Option(obj.fields.get(fieldName)) match {
                 case Some(name) => name
                 case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}")
               }
+              // This shouldn't return null since we're mapping over the values that the Jackson JsonNode told us that it had
               val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new RuntimeException("This shouldn't happen if Jackson returns consistent data"))
+
+              // Finally, use Jackson's ObjectMapper to map the JsonNode for this field to an instance of type desired by the dataSource
               val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
               (fieldName, newV.asInstanceOf[AnyRef])
             }).toMap
+
+            // Lastly, perform the insert query and respond appropriately
             dataSource.insertQuery(obj, mappedValues)
             Response.status(CREATED).build()
           } catch {
@@ -101,6 +148,9 @@ class Application @Inject() (
       resourceBuilder.build()
     }
 
+    /**
+     * Builds JAX-RS resources for the elements of each index in this object
+     */
     def indexResources = obj.indices.map(index => {
       import javax.ws.rs.container.ContainerRequestContext
       import org.glassfish.jersey.process.Inflector
@@ -115,11 +165,21 @@ class Application @Inject() (
         override def apply(request: ContainerRequestContext) = {
           val info = request.getUriInfo
           val queryParameters = info.getQueryParameters
+
+          // Because technically path parameters can have multiple
+          // instantiations, getPathParameters returns a MultivaluedMap.
+          // Since we only want a single value, we just map over each of the
+          // value lists and return the first one.
           val pathParameters = info.getPathParameters.mapValues(_.head).toMap
 
           val queryStrategy = splitStrategy.strategyForQuery(queryParameters)
 
+          // Actually execute the query against the dataSource
           val results = dataSource.executeQuery(obj, index, queryStrategy, pathParameters).map(_.toMap)
+
+          // We use a streaming output here so that we don't have to store the
+          // entire result of the JSON serialization in memory while we're
+          // writing the output
           val stream = new StreamingOutput() {
             import java.io.OutputStream
 
@@ -127,6 +187,8 @@ class Application @Inject() (
               mapper.writeValue(output, results)
             }
           }
+
+          // Finally build the JAX-RS response
           Response.ok(stream).build()
         }
       })
