@@ -37,7 +37,7 @@ objects:
           strategy:
             name: duration
             config:
-              duration: P30D
+              duration: P1D
         clustering:
           field: time
           order: DESC
@@ -50,11 +50,24 @@ objects:
           strategy:
             name: duration
             config:
-              duration: P7D
+              duration: P1D
         clustering:
           field: time
           order: DESC
       - name: org_test
+        partition:
+          - org
+          - test
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        clustering:
+          field: time
+          order: DESC
+      - name: org
         partition:
           - org
         split:

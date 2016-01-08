@@ -121,7 +121,7 @@ class CassandraDataSource @Inject() (
           } else {
             ""
           }
-          s"CREATE TABLE IF NOT EXISTS ${columnFamilyName(obj, index)} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${index.split.column}))"
+          s"CREATE TABLE IF NOT EXISTS ${keyspaceName}.${columnFamilyName(obj, index)} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${index.split.column}))"
         })
       }).reduce(_++_).foreach(session.execute(_))
     }
