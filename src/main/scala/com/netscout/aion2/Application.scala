@@ -55,10 +55,16 @@ class Application @Inject() (
   val builtinSchemaProviders: Iterable[SchemaProvider] = Seq(configSchemaProvider)
 
   implicit class AionObjectWithResources(val obj: AionObjectConfig) {
+    import com.fasterxml.jackson.databind.JsonNode
     import javax.ws.rs.core.{Response, StreamingOutput}
     import javax.ws.rs.core.MediaType._
 
     val resourcePath = s"/${obj.name}"
+
+    private def jsonToDataSourceObject(fieldName: String, jsonNode: JsonNode): AnyRef = {
+      val typeName = Option(obj.fields.get(fieldName)).getOrElse(throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}"))
+      mapper.treeToValue(jsonNode, dataSource.classOfType(typeName)).asInstanceOf[AnyRef]
+    }
 
     def indexResourcePath(index: AionIndexConfig) = {
       val partitionPathKeys = index.partition.map(p => s"{$p}")
@@ -82,13 +88,8 @@ class Application @Inject() (
           try {
             val values = mapper.readTree(request.getEntityStream)
             val mappedValues = values.fieldNames.map(fieldName => {
-              val typeName = Option(obj.fields.get(fieldName)) match {
-                case Some(name) => name
-                case None => throw new IllegalQueryException(s"Field ${fieldName} not included in object description for object ${obj.name}")
-              }
               val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new RuntimeException("This shouldn't happen if Jackson returns consistent data"))
-              val newV = mapper.treeToValue(jsonNode, dataSource.classOfType(typeName.toString))
-              (fieldName, newV.asInstanceOf[AnyRef])
+              (fieldName, jsonToDataSourceObject(fieldName, jsonNode))
             }).toMap
             dataSource.insertQuery(obj, mappedValues)
             Response.status(CREATED).build()
@@ -116,10 +117,16 @@ class Application @Inject() (
           val info = request.getUriInfo
           val queryParameters = info.getQueryParameters
           val pathParameters = info.getPathParameters.mapValues(_.head).toMap
+          val mappedPathParameters = pathParameters.map(_ match {
+            case (k, v) => {
+              val jsonNode = mapper.readTree(mapper.writeValueAsBytes(v))
+              (k, jsonToDataSourceObject(k, jsonNode))
+            }
+          })
 
           val queryStrategy = splitStrategy.strategyForQuery(queryParameters)
 
-          val results = dataSource.executeQuery(obj, index, queryStrategy, pathParameters).map(_.toMap)
+          val results = dataSource.executeQuery(obj, index, queryStrategy, mappedPathParameters).map(_.toMap)
           val stream = new StreamingOutput() {
             import java.io.OutputStream
 
