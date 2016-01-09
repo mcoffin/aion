@@ -87,4 +87,27 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_no_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row), time))")
   }
+
+  it should "map classes for cassandra types" in {
+    val f = defaultFixture
+
+    val typesToTest = Seq(
+      "ascii",
+      "bigint",
+      "blob",
+      "boolean",
+      "counter",
+      "decimal",
+      "double",
+      "float",
+      "int",
+      "timestamp",
+      "timeuuid",
+      "uuid",
+      "text"
+    )
+    for (t <- typesToTest) {
+      f.uut.classOfType(t) should not be (null)
+    }
+  }
 }
