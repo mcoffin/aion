@@ -112,6 +112,16 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     }
   }
 
+  it should "throw IllegalTypeException for an unrecognized type" in {
+    import com.netscout.aion2.except._
+
+    val f = defaultFixture
+
+    a [IllegalTypeException] should be thrownBy {
+      f.uut.classOfType("definitely not a cql type")
+    }
+  }
+
   it should "query for partial and full data executeQuery" in {
     import com.datastax.driver.core.{Row, Statement, ResultSet}
     import com.netscout.aion2.model.QueryStrategy
