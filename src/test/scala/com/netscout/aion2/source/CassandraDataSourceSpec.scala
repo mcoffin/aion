@@ -158,4 +158,24 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
       override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data FROM aion.foo_single_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli} AND partition='somePartition';"
     }))
   }
+
+  it should "insert data during insertQuery" in {
+    import com.datastax.driver.core.Statement
+    import com.datastax.driver.core.utils.UUIDs
+
+    val schema = new AionConfig(classOf[ApplicationSpec].getResourceAsStream("schema-complete.yml")).schema
+    val obj = schema.head
+
+    val f = defaultFixture
+
+    f.uut.insertQuery(obj, Map(
+      "partition" -> "somePartition",
+      "range" -> "someRange",
+      "time" -> UUIDs.timeBased(),
+      "data" -> ""
+    ))
+
+    // 3 times because it should insert once for each index
+    verify(f.testModule.session, times(3)).execute(any(classOf[Statement])) // TODO: better statement matching here
+  }
 }
