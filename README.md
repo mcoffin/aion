@@ -8,7 +8,7 @@
 
 # Status
 
-Aion is **not** ready to be used yet. In fact, it is still very much under active development and not even in a feature-complete state yet, much less a completed, tested, and ready state.
+Aion is **not** ready to be used yet.
 
 # License
 
