@@ -145,6 +145,11 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     f.test.tearDown
   }
 
+  it should "ask DataStore to initialize schema on startup" in {
+    val f = defaultFixture
+    verify(f.testModule.dataSource).initializeSchema(anyObject())
+  }
+
   "The schema resource" should "report accurate schema information" in {
     val f = namedFixture("complete")
     val result: Response = f.test.target("/schema").request().get()
