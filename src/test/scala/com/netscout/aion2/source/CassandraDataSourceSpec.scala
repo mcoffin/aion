@@ -7,6 +7,7 @@ import net.codingwell.scalaguice.InjectorExtensions._
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.mockito.BDDMockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 
@@ -109,5 +110,39 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     for (t <- typesToTest) {
       f.uut.classOfType(t) should not be (null)
     }
+  }
+
+  it should "query for partial data executeQuery" in {
+    import com.datastax.driver.core.{Row, Statement, ResultSet}
+    import com.netscout.aion2.model.QueryStrategy
+    import java.time.Instant
+    import java.time.temporal.ChronoUnit._
+    import java.util.Date
+    import org.mockito.ArgumentMatcher
+    import scala.collection.JavaConversions._
+
+    val schema = new AionConfig(classOf[ApplicationSpec].getResourceAsStream("schema-complete.yml")).schema
+    val obj = schema.head
+    val index = obj.indices.filter(idx => idx.name equals "no_partition").head
+
+    val f = defaultFixture
+
+    val queryStrategy = mock[QueryStrategy]
+    given(queryStrategy.minimum).willReturn(Date.from(Instant.EPOCH.plus(1, HOURS)), Seq.empty : _*)
+    given(queryStrategy.maximum).willReturn(Date.from(Instant.EPOCH.plus(2, HOURS)), Seq.empty : _*)
+    given(queryStrategy.partialRows).willReturn(Seq(Date.from(Instant.EPOCH)))
+    given(queryStrategy.fullRows).willReturn(None)
+
+    val returnedResults = mock[ResultSet]
+    when(returnedResults.all).thenReturn(new java.util.LinkedList[Row])
+
+    given(f.testModule.session.execute(anyString())).willReturn(returnedResults)
+    given(f.testModule.session.execute(any(classOf[Statement]))).willReturn(returnedResults)
+    
+    val response = f.uut.executeQuery(obj, index, queryStrategy, Map())
+
+    verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
+      override def matches(obj: Object) = obj.toString equals s"SELECT partition,range,system.dateof(time),data FROM aion.foo_no_partition WHERE time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
+    }))
   }
 }
