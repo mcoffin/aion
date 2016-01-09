@@ -112,7 +112,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     }
   }
 
-  it should "query for partial data executeQuery" in {
+  it should "query for partial and full data executeQuery" in {
     import com.datastax.driver.core.{Row, Statement, ResultSet}
     import com.netscout.aion2.model.QueryStrategy
     import java.time.Instant
@@ -131,7 +131,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     given(queryStrategy.minimum).willReturn(Date.from(Instant.EPOCH.plus(1, HOURS)), Seq.empty : _*)
     given(queryStrategy.maximum).willReturn(Date.from(Instant.EPOCH.plus(2, HOURS)), Seq.empty : _*)
     given(queryStrategy.partialRows).willReturn(Seq(Date.from(Instant.EPOCH)))
-    given(queryStrategy.fullRows).willReturn(None)
+    given(queryStrategy.fullRows).willReturn(Some(Seq(Date.from(Instant.EPOCH.plus(1, DAYS)))))
 
     val returnedResults = mock[ResultSet]
     when(returnedResults.all).thenReturn(new java.util.LinkedList[Row])
@@ -143,6 +143,9 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
       override def matches(obj: Object) = obj.toString equals s"SELECT partition,range,system.dateof(time),data FROM aion.foo_no_partition WHERE time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
+    }))
+    verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
+      override def matches(obj: Object) = obj.toString equals s"SELECT partition,range,system.dateof(time),data FROM aion.foo_no_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli};"
     }))
   }
 }
