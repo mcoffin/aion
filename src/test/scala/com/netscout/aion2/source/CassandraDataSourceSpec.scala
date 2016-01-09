@@ -1,14 +1,26 @@
 package com.netscout.aion2.source
 
-import com.google.inject.{Guice, Module}
+import com.google.inject.{Guice, Module, AbstractModule}
 
+import net.codingwell.scalaguice.ScalaModule
 import net.codingwell.scalaguice.InjectorExtensions._
 
 import org.scalatest._
+import org.scalatest.mock.MockitoSugar
 
-class CassandraDataSourceSpec extends FlatSpec with Matchers {
+class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.netscout.aion2.ApplicationSpec
   import com.typesafe.config.ConfigFactory
+
+  class MockedCassandraModule extends AbstractModule with ScalaModule {
+    import com.datastax.driver.core.Session
+
+    val session = mock[Session]
+
+    override def configure {
+      bind[Session].toInstance(session)
+    }
+  }
 
   def defaultModules = {
     import com.github.racc.tscg.TypesafeConfigModule
@@ -18,7 +30,8 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers {
       TypesafeConfigModule.fromConfig(ApplicationSpec.namedConfig("defaults")),
       JacksonModule,
       Slf4jLoggerModule,
-      AionResourceModule
+      AionResourceModule,
+      new MockedCassandraModule
     )
   }
 

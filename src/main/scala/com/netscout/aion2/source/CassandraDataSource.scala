@@ -7,19 +7,13 @@ import com.google.inject.Inject
 import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig, QueryStrategy, DataSource}
 
 class CassandraDataSource @Inject() (
-  @TypesafeConfig("com.netscout.aion2.cassandra.contactPoints") contactPoints: java.util.List[String],
   @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceName: String,
-  val mapper: ObjectMapper
+  val mapper: ObjectMapper,
+  val session: Session
 ) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
   import java.util.UUID
   import scala.collection.JavaConversions._
-
-  val cluster = Cluster.builder()
-    .addContactPoints(contactPoints : _*)
-    .build()
-
-  lazy val session = cluster.connect()
 
   /**
    * Additional methods for AionObjectConfig used by
