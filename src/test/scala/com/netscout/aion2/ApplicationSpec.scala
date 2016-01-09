@@ -46,9 +46,9 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     def setupTestDataTypes {
       import java.util.UUID
 
-      doReturn(classOf[String]).when(dataSource).classOfType("text")
-      doReturn(classOf[UUID]).when(dataSource).classOfType("timeuuid")
-      doReturn(classOf[Array[Byte]]).when(dataSource).classOfType("blob")
+      doReturn(classOf[String], Seq.empty : _*).when(dataSource).classOfType("text")
+      doReturn(classOf[UUID], Seq.empty : _*).when(dataSource).classOfType("timeuuid")
+      doReturn(classOf[Array[Byte]], Seq.empty : _*).when(dataSource).classOfType("blob")
     }
 
     override def configure {
@@ -143,6 +143,11 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     result shouldBeOfFamily SUCCESSFUL
     result.getMediaType shouldBe TEXT_PLAIN_TYPE 
     f.test.tearDown
+  }
+
+  it should "ask DataStore to initialize schema on startup" in {
+    val f = defaultFixture
+    verify(f.testModule.dataSource).initializeSchema(anyObject())
   }
 
   "The schema resource" should "report accurate schema information" in {

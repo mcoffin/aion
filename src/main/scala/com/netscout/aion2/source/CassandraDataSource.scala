@@ -7,19 +7,13 @@ import com.google.inject.Inject
 import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig, QueryStrategy, DataSource}
 
 class CassandraDataSource @Inject() (
-  @TypesafeConfig("com.netscout.aion2.cassandra.contactPoints") contactPoints: java.util.List[String],
   @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceName: String,
-  val mapper: ObjectMapper
+  val mapper: ObjectMapper,
+  val session: Session
 ) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
   import java.util.UUID
   import scala.collection.JavaConversions._
-
-  val cluster = Cluster.builder()
-    .addContactPoints(contactPoints : _*)
-    .build()
-
-  lazy val session = cluster.connect()
 
   /**
    * Additional methods for AionObjectConfig used by
@@ -118,27 +112,31 @@ class CassandraDataSource @Inject() (
     import com.datastax.driver.core.DataType
     import com.datastax.driver.core.DataType.Name._
     import com.fasterxml.jackson.databind.JsonNode
+    import com.netscout.aion2.except._
 
     t match {
       case "json" => classOf[JsonNode]
       case _ => {
-        val cqlType = DataType.Name.valueOf(t.toUpperCase)
-
-        cqlType match {
-          case ASCII => classOf[String]
-          case BIGINT => classOf[java.lang.Long]
-          case BLOB => classOf[java.nio.ByteBuffer]
-          case BOOLEAN => classOf[Boolean]
-          case COUNTER => classOf[Long]
-          case DECIMAL => classOf[java.math.BigDecimal]
-          case DOUBLE => classOf[Double]
-          case FLOAT => classOf[Float]
-          case INT => classOf[Int]
-          case TIMESTAMP => classOf[java.util.Date]
-          case TIMEUUID => classOf[java.util.UUID]
-          case DataType.Name.UUID => classOf[java.util.UUID]
-          case TEXT => classOf[String]
-          case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+        try {
+          val cqlType = DataType.Name.valueOf(t.toUpperCase)
+          cqlType match {
+            case ASCII => classOf[String]
+            case BIGINT => classOf[java.lang.Long]
+            case BLOB => classOf[java.nio.ByteBuffer]
+            case BOOLEAN => classOf[Boolean]
+            case COUNTER => classOf[Long]
+            case DECIMAL => classOf[java.math.BigDecimal]
+            case DOUBLE => classOf[Double]
+            case FLOAT => classOf[Float]
+            case INT => classOf[Int]
+            case TIMESTAMP => classOf[java.util.Date]
+            case TIMEUUID => classOf[java.util.UUID]
+            case DataType.Name.UUID => classOf[java.util.UUID]
+            case TEXT => classOf[String]
+            case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+          }
+        } catch {
+          case (e: IllegalArgumentException) => throw new IllegalTypeException(t, e)
         }
       }
     }
