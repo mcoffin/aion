@@ -60,4 +60,31 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     // Because there's 3 indices 
     verify(f.testModule.session, times(3)).execute(anyString())
   }
+
+  it should "create correct table for single partition key index" in {
+    val schemaProvider = new AionConfig(classOf[ApplicationSpec].getResourceAsStream("schema-complete.yml"))
+
+    val f = defaultFixture
+    f.uut.initializeSchema(schemaProvider.schema)
+
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_single_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row, partition), time))")
+  }
+
+  it should "create correct table for double partition key index" in {
+    val schemaProvider = new AionConfig(classOf[ApplicationSpec].getResourceAsStream("schema-complete.yml"))
+
+    val f = defaultFixture
+    f.uut.initializeSchema(schemaProvider.schema)
+
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_double_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row, partition, range), time))")
+  }
+
+  it should "create correct table for no partition key index" in {
+    val schemaProvider = new AionConfig(classOf[ApplicationSpec].getResourceAsStream("schema-complete.yml"))
+
+    val f = defaultFixture
+    f.uut.initializeSchema(schemaProvider.schema)
+
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_no_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row), time))")
+  }
 }
