@@ -6,9 +6,11 @@
 
 `aion` is a RESTful API to data stored in wide-row style in Cassandra
 
-# Status
+# Documentation
 
-Aion is **not** ready to be used yet.
+Documentation is hosted on [GitHub Pages](http://flukenetworks.github.io/aion).
+
+Information about, and examples of, the schema configuration file can be found [on the Wiki](https://github.com/FlukeNetworks/aion/wiki/Configuration).
 
 # License
 
