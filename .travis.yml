@@ -1,6 +1,11 @@
 sudo: false
 jdk:
   - oraclejdk8
+env:
+  - GIT_AUTHOR_NAME=Travis
+  - GIT_COMMITTER_NAME=Travis
 language: scala
 script:
-  - ./gradlew check build reportScoverage coveralls
+  - ./gradlew check build
+after_success:
+  - ./gradlew reportScoverage coveralls githubPages

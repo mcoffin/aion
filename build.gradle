@@ -6,6 +6,7 @@ plugins {
     id "com.github.maiflai.scalatest" version "0.11"
     id "org.scoverage" version "2.0.0"
     id "com.github.kt3k.coveralls" version "2.4.0x"
+    id "org.ajoberstar.github-pages" version "1.3.2"
 }
 
 repositories {
@@ -81,3 +82,17 @@ task scoverageCopyVersionProperties(type: Copy, dependsOn: createVersionProperti
 }
 
 scoverageClasses.dependsOn scoverageCopyVersionProperties
+
+// Documentation
+githubPages {
+    repoUri = "https://github.com/FlukeNetworks/aion.git"
+    pages {
+        from "${buildDir}/docs/scaladoc"
+    }
+    credentials {
+        username = "${System.env.GHPAGES_USER}"
+        password = "${System.env.GHPAGES_PASS}"
+    }
+    deleteExistingFiles = true
+}
+prepareGhPages.dependsOn scaladoc
