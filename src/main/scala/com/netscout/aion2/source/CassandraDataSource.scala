@@ -267,14 +267,18 @@ class CassandraDataSource @Inject() (
     val selectionsReverseIndex = selectedFields.map(f => (obj.selectionOfField(f), f)).toMap
 
     // TODO: atomically batch queries
-    val results = queries.map(session.execute(_)).map(_.all).reduce(_++_)
-    results.map(row => {
-      val columnsToGrab = row.getColumnDefinitions.map(_.getName)
-      columnsToGrab.map(f => {
-        (selectionsReverseIndex.get(f).get, row.getObject(f))
-      }).map(_ match {
-        case (k, v) => (k, obj.aionResponseForQueryObject(k, v))
+    val results = queries.map(session.execute(_)).map(_.all).filter(_.size > 0)
+    if (results.size > 0) {
+      results.reduce(_++_).map(row => {
+        val columnsToGrab = row.getColumnDefinitions.map(_.getName)
+        columnsToGrab.map(f => {
+          (selectionsReverseIndex.get(f).get, row.getObject(f))
+        }).map(_ match {
+          case (k, v) => (k, obj.aionResponseForQueryObject(k, v))
+        })
       })
-    })
+    } else {
+      Seq()
+    }
   }
 }
