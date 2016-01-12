@@ -180,8 +180,8 @@ class CassandraDataSource @Inject() (
       insertStmt
     })
 
-    // TODO: atomically batch queries
-    queries.foreach(session.execute(_))
+    val batchQuery = QueryBuilder.batch(queries.toArray : _*)
+    session.execute(batchQuery)
   }
 
   override def executeQuery(obj: AionObjectConfig, index: AionIndexConfig, query: QueryStrategy, partitionKey: Map[String, AnyRef]) = {
