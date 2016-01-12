@@ -10,15 +10,30 @@ import org.yaml.snakeyaml.Yaml
 
 import scala.beans.BeanProperty
 
+/**
+ * Convenience class that models the structure of Aion's
+ * schema.yml file
+ */
 class Configuration {
+  /**
+   * Set of objects that describe Aion's keyspace
+   */
   @BeanProperty var objects: Array[AionObjectConfig] = null
 }
 
+/**
+ * Convenience class for using Aion's schema.yml configuration
+ * as an instance of [[com.netscout.aion2.SchemaProvider]]
+ */
 class AionConfig (
   val inputStream: InputStream
 ) extends SchemaProvider {
   import scala.collection.JavaConversions._
 
+  /**
+   * Lazy-loaded instance of [[com.netscout.aion2.Configuration]] built
+   * from the povided InputStream
+   */
   lazy val cfg: Configuration = {
     val yaml = new Yaml
     yaml.loadAs(inputStream, classOf[Configuration])

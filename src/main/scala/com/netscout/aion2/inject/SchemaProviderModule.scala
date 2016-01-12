@@ -7,6 +7,10 @@ import java.io.InputStream
 
 import net.codingwell.scalaguice.ScalaModule
 
+/**
+ * Convenience version of [[com.netscout.aion2.AionConfig]] that loads
+ * the "schema.yml" resource as its InputStream
+ */
 class InjectedAionConfig @Inject() (
   @AionResource(resourcePath = "schema.yml") resourceStream: Option[InputStream]
 ) extends AionConfig(resourceStream.get)
