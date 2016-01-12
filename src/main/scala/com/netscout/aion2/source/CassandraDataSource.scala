@@ -208,7 +208,6 @@ class CassandraDataSource @Inject() (
     val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
 
     val partialQueries = query.partialRows.map(rowKey => {
-      println(s"Creating partial query for rowKey: ${rowKey}")
       val splitClauses = Seq(
         QueryBuilder.gte(index.split.column, lowRangeSuffix),
         QueryBuilder.lt(index.split.column, highRangeSuffix),
@@ -239,7 +238,6 @@ class CassandraDataSource @Inject() (
     val queries: Iterable[Statement] = query.fullRows match {
       case Some(fullRows) => {
         val middleQueries = fullRows.map(rowKey => {
-          println(s"Creating middle query for rowKey: ${rowKey}")
           var stmt = QueryBuilder.select()
           selectedFields.foreach(f => {
             Option(obj.fields.get(f)) match {
@@ -262,7 +260,6 @@ class CassandraDataSource @Inject() (
       }
       case None => partialQueries
     }
-    queries.foreach(q => println(q.toString))
 
     val selectionsReverseIndex = selectedFields.map(f => (obj.selectionOfField(f), f)).toMap
 
