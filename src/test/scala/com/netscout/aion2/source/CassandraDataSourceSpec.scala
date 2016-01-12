@@ -175,7 +175,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
       "data" -> ""
     ))
 
-    // 3 times because it should insert once for each index
-    verify(f.testModule.session, times(3)).execute(any(classOf[Statement])) // TODO: better statement matching here
+    // should only be one query because it should be a batched query
+    verify(f.testModule.session, times(1)).execute(any(classOf[Statement])) // TODO: better statement matching here
   }
 }
