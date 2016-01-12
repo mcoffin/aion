@@ -14,7 +14,7 @@ objects:
           strategy:
             name: duration
             config:
-              duration: P7D
+              duration: P30D
         clustering:
           field: time
           order: DESC
