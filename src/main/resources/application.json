@@ -3,8 +3,7 @@
         "netscout": {
             "aion2": {
                 "cassandra": {
-                    "contactPoints": ["127.0.0.1"],
-                    "keyspace": "aion"
+                    "contactPoints": ["127.0.0.1"]
                 }
             }
         }

@@ -3,7 +3,13 @@
         "netscout": {
             "aion2": {
                 "cassandra": {
-                    "keyspace": "aion",
+                    "keyspace": {
+                        "name": "aion",
+                        "replication": {
+                            "clazz": "SimpleStrategy",
+                            "replicationFactor": 1
+                        }
+                    },
                     "contactPoints": ["127.0.0.1"]
                 }
             }
