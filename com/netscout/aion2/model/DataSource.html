@@ -49,7 +49,8 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Trait representing the abstract idea of an Aion data storage engine
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -95,7 +96,7 @@
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="com.netscout.aion2.model.DataSource#classOfType" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="com.netscout.aion2.model.DataSource#classOfType" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="classOfType(t:String):Class[_]"></a>
       <a id="classOfType(String):Class[_]"></a>
       <h4 class="signature">
@@ -111,8 +112,10 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="com.netscout.aion2.model.DataSource#executeQuery" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Gets the desired class to be read for a given type
+</p><div class="fullcomment"><div class="comment cmt"><p>Gets the desired class to be read for a given type
+</p></div><dl class="paramcmts block"><dt class="param">t</dt><dd class="cmt"><p>the name of the type to be mapped to t class</p></dd></dl></div>
+    </li><li name="com.netscout.aion2.model.DataSource#executeQuery" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="executeQuery(obj:com.netscout.aion2.model.AionObjectConfig,index:com.netscout.aion2.model.AionIndexConfig,query:com.netscout.aion2.model.QueryStrategy,partitionConstraints:Map[String,AnyRef]):Iterable[Iterable[(String,Object)]]"></a>
       <a id="executeQuery(AionObjectConfig,AionIndexConfig,QueryStrategy,Map[String,AnyRef]):Iterable[Iterable[(String,AnyRef)]]"></a>
       <h4 class="signature">
@@ -128,8 +131,10 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="com.netscout.aion2.model.DataSource#initializeSchema" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Executes a SELECT-style query on the data source
+</p><div class="fullcomment"><div class="comment cmt"><p>Executes a SELECT-style query on the data source
+</p></div><dl class="paramcmts block"><dt class="param">obj</dt><dd class="cmt"><p>the <a href="AionObjectConfig.html" class="extype" name="com.netscout.aion2.model.AionObjectConfig">com.netscout.aion2.model.AionObjectConfig</a> for which to get data</p></dd><dt class="param">index</dt><dd class="cmt"><p>the <a href="AionIndexConfig.html" class="extype" name="com.netscout.aion2.model.AionIndexConfig">com.netscout.aion2.model.AionIndexConfig</a> from which to read data</p></dd><dt class="param">query</dt><dd class="cmt"><p>the <a href="QueryStrategy.html" class="extype" name="com.netscout.aion2.model.QueryStrategy">com.netscout.aion2.model.QueryStrategy</a> for reading from the split key</p></dd><dt class="param">partitionConstraints</dt><dd class="cmt"><p>map representing partition key values for the given index</p></dd><dt>returns</dt><dd class="cmt"><p>an iterator over objects (represented as an iterator of tuples which represent the object's fields and values)</p></dd></dl></div>
+    </li><li name="com.netscout.aion2.model.DataSource#initializeSchema" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="initializeSchema(objects:Set[com.netscout.aion2.model.AionObjectConfig]):Unit"></a>
       <a id="initializeSchema(Set[AionObjectConfig]):Unit"></a>
       <h4 class="signature">
@@ -145,8 +150,10 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
-    </li><li name="com.netscout.aion2.model.DataSource#insertQuery" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Initializes the backend storage for a given keyspace and set of objects
+</p><div class="fullcomment"><div class="comment cmt"><p>Initializes the backend storage for a given keyspace and set of objects
+</p></div><dl class="paramcmts block"><dt class="param">objects</dt><dd class="cmt"><p>the object schemata that should be created within the keyspace</p></dd></dl></div>
+    </li><li name="com.netscout.aion2.model.DataSource#insertQuery" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="insertQuery(obj:com.netscout.aion2.model.AionObjectConfig,values:Map[String,AnyRef]):Unit"></a>
       <a id="insertQuery(AionObjectConfig,Map[String,AnyRef]):Unit"></a>
       <h4 class="signature">
@@ -162,7 +169,9 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Inserts data in to this data source
+</p><div class="fullcomment"><div class="comment cmt"><p>Inserts data in to this data source
+</p></div><dl class="paramcmts block"><dt class="param">obj</dt><dd class="cmt"><p>the AionObjectConfig from the schema for which we are inserting</p></dd><dt class="param">values</dt><dd class="cmt"><p>the values provided for the object's fields</p></dd></dl></div>
     </li></ol>
             </div>
 

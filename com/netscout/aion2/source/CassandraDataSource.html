@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.netscout.aion2.source.CassandraDataSource#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(keyspaceName:String,mapper:com.fasterxml.jackson.databind.ObjectMapper,session:com.datastax.driver.core.Session):com.netscout.aion2.source.CassandraDataSource"></a>
+      <a id="&lt;init&gt;(keyspaceConfig:com.netscout.aion2.source.CassandraKeyspaceConfig,mapper:com.fasterxml.jackson.databind.ObjectMapper,session:com.datastax.driver.core.Session):com.netscout.aion2.source.CassandraDataSource"></a>
       <a id="&lt;init&gt;:CassandraDataSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CassandraDataSource</span><span class="params">(<span name="keyspaceName">keyspaceName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="mapper">mapper: <span class="extype" name="com.fasterxml.jackson.databind.ObjectMapper">ObjectMapper</span></span>, <span name="session">session: <span class="extype" name="com.datastax.driver.core.Session">Session</span></span>)</span>
+        <span class="name">CassandraDataSource</span><span class="params">(<span name="keyspaceConfig">keyspaceConfig: <a href="CassandraKeyspaceConfig.html" class="extype" name="com.netscout.aion2.source.CassandraKeyspaceConfig">CassandraKeyspaceConfig</a></span>, <span name="mapper">mapper: <span class="extype" name="com.fasterxml.jackson.databind.ObjectMapper">ObjectMapper</span></span>, <span name="session">session: <span class="extype" name="com.datastax.driver.core.Session">Session</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.source.CassandraDataSource@&lt;init&gt;(keyspaceName:String,mapper:com.fasterxml.jackson.databind.ObjectMapper,session:com.datastax.driver.core.Session):com.netscout.aion2.source.CassandraDataSource" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.source.CassandraDataSource@&lt;init&gt;(keyspaceConfig:com.netscout.aion2.source.CassandraKeyspaceConfig,mapper:com.fasterxml.jackson.databind.ObjectMapper,session:com.datastax.driver.core.Session):com.netscout.aion2.source.CassandraDataSource" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -241,7 +241,9 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
+      <p class="shortcomment cmt">Gets the desired class to be read for a given type
+</p><div class="fullcomment"><div class="comment cmt"><p>Gets the desired class to be read for a given type
+</p></div><dl class="paramcmts block"><dt class="param">t</dt><dd class="cmt"><p>the name of the type to be mapped to t class</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -315,7 +317,9 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
+      <p class="shortcomment cmt">Executes a SELECT-style query on the data source
+</p><div class="fullcomment"><div class="comment cmt"><p>Executes a SELECT-style query on the data source
+</p></div><dl class="paramcmts block"><dt class="param">obj</dt><dd class="cmt"><p>the <a href="../model/AionObjectConfig.html" class="extype" name="com.netscout.aion2.model.AionObjectConfig">com.netscout.aion2.model.AionObjectConfig</a> for which to get data</p></dd><dt class="param">index</dt><dd class="cmt"><p>the <a href="../model/AionIndexConfig.html" class="extype" name="com.netscout.aion2.model.AionIndexConfig">com.netscout.aion2.model.AionIndexConfig</a> from which to read data</p></dd><dt class="param">query</dt><dd class="cmt"><p>the <a href="../model/QueryStrategy.html" class="extype" name="com.netscout.aion2.model.QueryStrategy">com.netscout.aion2.model.QueryStrategy</a> for reading from the split key</p></dd><dt>returns</dt><dd class="cmt"><p>an iterator over objects (represented as an iterator of tuples which represent the object's fields and values)</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -373,6 +377,25 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.netscout.aion2.source.CassandraDataSource#initializeKeyspace" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="initializeKeyspace:Unit"></a>
+      <a id="initializeKeyspace:Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeKeyspace</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#com.netscout.aion2.source.CassandraDataSource@initializeKeyspace:Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Convenience method for initializing the keyspace for this
+<a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">com.netscout.aion2.source.CassandraDataSource</a>
+</p>
     </li><li name="com.netscout.aion2.source.CassandraDataSource#initializeSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeSchema(objects:Set[com.netscout.aion2.model.AionObjectConfig]):Unit"></a>
       <a id="initializeSchema(Set[AionObjectConfig]):Unit"></a>
@@ -389,7 +412,9 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
+      <p class="shortcomment cmt">Initializes the backend storage for a given keyspace and set of objects
+</p><div class="fullcomment"><div class="comment cmt"><p>Initializes the backend storage for a given keyspace and set of objects
+</p></div><dl class="paramcmts block"><dt class="param">objects</dt><dd class="cmt"><p>the object schemata that should be created within the keyspace</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
     </li><li name="com.netscout.aion2.source.CassandraDataSource#insertQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="insertQuery(obj:com.netscout.aion2.model.AionObjectConfig,values:Map[String,AnyRef]):Unit"></a>
       <a id="insertQuery(AionObjectConfig,Map[String,AnyRef]):Unit"></a>
@@ -406,7 +431,9 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
+      <p class="shortcomment cmt">Inserts data in to this data source
+</p><div class="fullcomment"><div class="comment cmt"><p>Inserts data in to this data source
+</p></div><dl class="paramcmts block"><dt class="param">obj</dt><dd class="cmt"><p>the AionObjectConfig from the schema for which we are inserting</p></dd><dt class="param">values</dt><dd class="cmt"><p>the values provided for the object's fields</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.source.CassandraDataSource">CassandraDataSource</a> → <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">DataSource</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -424,13 +451,30 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.netscout.aion2.source.CassandraDataSource#keyspaceName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="com.netscout.aion2.source.CassandraDataSource#keyspaceConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="keyspaceConfig:com.netscout.aion2.source.CassandraKeyspaceConfig"></a>
+      <a id="keyspaceConfig:CassandraKeyspaceConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">keyspaceConfig</span><span class="result">: <a href="CassandraKeyspaceConfig.html" class="extype" name="com.netscout.aion2.source.CassandraKeyspaceConfig">CassandraKeyspaceConfig</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#com.netscout.aion2.source.CassandraDataSource@keyspaceConfig:com.netscout.aion2.source.CassandraKeyspaceConfig" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="com.netscout.aion2.source.CassandraDataSource#keyspaceName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="keyspaceName:String"></a>
       <a id="keyspaceName:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
         <span class="name">keyspaceName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
@@ -440,7 +484,10 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Convenience method for accessing the keyspace name.</p><div class="fullcomment"><div class="comment cmt"><p>Convenience method for accessing the keyspace name.</p><p>Included because legacy code used to access the keyspaceName
+variable, but it was removed when keyspace configuration became
+more complex.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>the name of the keyspace for this <a href="../model/DataSource.html" class="extype" name="com.netscout.aion2.model.DataSource">com.netscout.aion2.model.DataSource</a></p></dd></dl></div>
     </li><li name="com.netscout.aion2.source.CassandraDataSource#mapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="mapper:com.fasterxml.jackson.databind.ObjectMapper"></a>
       <a id="mapper:ObjectMapper"></a>
