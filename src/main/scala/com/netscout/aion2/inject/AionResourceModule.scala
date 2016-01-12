@@ -1,8 +1,11 @@
 package com.netscout.aion2.inject
 
-import com.google.inject.{AbstractModule, Key, Provider}
+import com.google.inject.{AbstractModule, Key, Provider, Inject}
+import com.google.inject.name.Named
 import com.google.inject.spi.{TypeEncounter, TypeListener}
+import com.netscout.aion2.Application
 
+import java.io.InputStream
 import java.lang.reflect.{Constructor, Field, Method, Parameter, Type}
 
 import net.codingwell.scalaguice.ScalaModule
@@ -15,6 +18,35 @@ import org.reflections.util.FilterBuilder
 
 import scala.collection.JavaConversions._
 
+/**
+ * Provider class for getting the schema.yml resource.
+ *
+ * If there is a system property com.netscout.aion2.schemaFile, it will load
+ * the schema file from that file. If there is not such a property, it will
+ * attempt to load the schema.yml resource of the Application class.
+ */
+class SchemaResourceProvider extends Provider[Option[InputStream]] {
+  var schemaResource: Option[String] = None
+
+  @Inject(optional=true)
+  def setSchemaResource(@Named("com.netscout.aion2.schemaFile") filename: String) {
+    schemaResource = Option(filename)
+  }
+
+  override def get = {
+    import java.io.FileInputStream
+
+    val maybeSchema = for {
+      path <- schemaResource
+    } yield new FileInputStream(path)
+
+    Option(maybeSchema.getOrElse(classOf[Application].getResourceAsStream("schema.yml")))
+  }
+}
+
+/**
+ * Guice module for binding Aion resources to input streams
+ */
 object AionResourceModule extends AbstractModule with ScalaModule {
   val reflections = {
     val configBuilder = (new ConfigurationBuilder)
@@ -28,6 +60,10 @@ object AionResourceModule extends AbstractModule with ScalaModule {
       )
     new Reflections(configBuilder)
   }
+
+  val overriddenResources: Map[String, Class[_ <: Provider[Option[InputStream]]]] = Map(
+    "schema.yml" -> classOf[SchemaResourceProvider]
+  )
 
   override def configure {
     val annotatedConstructorsParams = reflections.getConstructorsWithAnyParamAnnotated(classOf[AionResource]).map(_.getParameters)
@@ -54,11 +90,11 @@ object AionResourceModule extends AbstractModule with ScalaModule {
   }
 
   def bindValue(paramClass: Class[_], paramType: Type, annotation: AionResource) {
-    import com.netscout.aion2.Application
-    import java.io.InputStream
-
-    bind[Option[InputStream]].annotatedWith(annotation).toProvider(new Provider[Option[InputStream]] {
-      override def get = Option(classOf[Application].getResourceAsStream(annotation.resourcePath))
-    })
+    overriddenResources.get(annotation.resourcePath) match {
+      case Some(provider) => bind[Option[InputStream]].annotatedWith(annotation).toProvider(provider)
+      case None => bind[Option[InputStream]].annotatedWith(annotation).toProvider(new Provider[Option[InputStream]] {
+        override def get = Option(classOf[Application].getResourceAsStream(annotation.resourcePath))
+      })
+    }
   }
 }
