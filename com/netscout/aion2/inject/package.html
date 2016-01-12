@@ -102,6 +102,26 @@
       <p class="shortcomment cmt">Convenience version of <a href="../AionConfig.html" class="extype" name="com.netscout.aion2.AionConfig">com.netscout.aion2.AionConfig</a> that loads
 the &quot;schema.yml&quot; resource as its InputStream
 </p>
+    </li><li name="com.netscout.aion2.inject.SchemaResourceProvider" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SchemaResourceProviderextendsProvider[Option[java.io.InputStream]]"></a>
+      <a id="SchemaResourceProvider:SchemaResourceProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SchemaResourceProvider.html"><span class="name">SchemaResourceProvider</span></a><span class="result"> extends <span class="extype" name="com.google.inject.Provider">Provider</span>[<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.io.InputStream">InputStream</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#com.netscout.aion2.inject.package@SchemaResourceProviderextendsProvider[Option[java.io.InputStream]]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Provider class for getting the schema.yml resource.</p><div class="fullcomment"><div class="comment cmt"><p>Provider class for getting the schema.yml resource.</p><p>If there is a system property com.netscout.aion2.schemaFile, it will load
+the schema file from that file. If there is not such a property, it will
+attempt to load the schema.yml resource of the Application class.
+</p></div></div>
     </li></ol>
             </div>
 
@@ -125,7 +145,8 @@ the &quot;schema.yml&quot; resource as its InputStream
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Guice module for binding Aion resources to input streams
+</p>
     </li><li name="com.netscout.aion2.inject.DataSourceModule" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DataSourceModule"></a>
       <a id="DataSourceModule:DataSourceModule"></a>
@@ -195,6 +216,24 @@ config file.</p>
       </a>
     </span>
       
+    </li><li name="com.netscout.aion2.inject.SystemPropertiesModule" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SystemPropertiesModule"></a>
+      <a id="SystemPropertiesModule:SystemPropertiesModule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SystemPropertiesModule$.html"><span class="name">SystemPropertiesModule</span></a><span class="result"> extends <span class="extype" name="com.google.inject.AbstractModule">AbstractModule</span> with <span class="extype" name="net.codingwell.scalaguice.ScalaModule">ScalaModule</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#com.netscout.aion2.inject.package@SystemPropertiesModule" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Guice module for binding named system properties
+</p>
     </li></ol>
             </div>
 

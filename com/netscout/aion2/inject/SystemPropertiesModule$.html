@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>Slf4jLoggerModule - aion 0.1.0 API - com.netscout.aion2.inject.Slf4jLoggerModule</title>
-          <meta name="description" content="Slf4jLoggerModule - aion 0.1.0 API - com.netscout.aion2.inject.Slf4jLoggerModule" />
-          <meta name="keywords" content="Slf4jLoggerModule aion 0.1.0 API com.netscout.aion2.inject.Slf4jLoggerModule" />
+          <title>SystemPropertiesModule - aion 0.1.0 API - com.netscout.aion2.inject.SystemPropertiesModule</title>
+          <meta name="description" content="SystemPropertiesModule - aion 0.1.0 API - com.netscout.aion2.inject.SystemPropertiesModule" />
+          <meta name="keywords" content="SystemPropertiesModule aion 0.1.0 API com.netscout.aion2.inject.SystemPropertiesModule" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'com.netscout.aion2.inject.Slf4jLoggerModule$';
+            var hash = 'com.netscout.aion2.inject.SystemPropertiesModule$';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -30,10 +30,10 @@
       <div id="definition">
         <img alt="Object" src="../../../../lib/object_big.png" />
         <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.netscout">netscout</a>.<a href="../package.html" class="extype" name="com.netscout.aion2">aion2</a>.<a href="package.html" class="extype" name="com.netscout.aion2.inject">inject</a></p>
-        <h1>Slf4jLoggerModule</h1><h3><span class="morelinks"><div>Related Doc:
+        <h1>SystemPropertiesModule</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="com.netscout.aion2.inject">package inject</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -45,11 +45,12 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">Slf4jLoggerModule</span><span class="result"> extends <span class="extype" name="com.google.inject.AbstractModule">AbstractModule</span> with <span class="extype" name="net.codingwell.scalaguice.ScalaModule">ScalaModule</span></span>
+        <span class="name">SystemPropertiesModule</span><span class="result"> extends <span class="extype" name="com.google.inject.AbstractModule">AbstractModule</span> with <span class="extype" name="net.codingwell.scalaguice.ScalaModule">ScalaModule</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Guice module for binding named system properties
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="net.codingwell.scalaguice.ScalaModule">ScalaModule</span>, <span class="extype" name="net.codingwell.scalaguice.InternalModule">InternalModule</span>[<span class="extype" name="com.google.inject.Binder">Binder</span>], <span class="extype" name="com.google.inject.AbstractModule">AbstractModule</span>, <span class="extype" name="com.google.inject.Module">Module</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -69,7 +70,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.netscout.aion2.inject.Slf4jLoggerModule"><span>Slf4jLoggerModule</span></li><li class="in" name="net.codingwell.scalaguice.ScalaModule"><span>ScalaModule</span></li><li class="in" name="net.codingwell.scalaguice.InternalModule"><span>InternalModule</span></li><li class="in" name="com.google.inject.AbstractModule"><span>AbstractModule</span></li><li class="in" name="com.google.inject.Module"><span>Module</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.netscout.aion2.inject.SystemPropertiesModule"><span>SystemPropertiesModule</span></li><li class="in" name="net.codingwell.scalaguice.ScalaModule"><span>ScalaModule</span></li><li class="in" name="net.codingwell.scalaguice.InternalModule"><span>InternalModule</span></li><li class="in" name="com.google.inject.AbstractModule"><span>AbstractModule</span></li><li class="in" name="com.google.inject.Module"><span>Module</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -88,44 +89,7 @@
         <div id="allMembers">
         
 
-        <div id="types" class="types members">
-              <h3>Type Members</h3>
-              <ol><li name="com.netscout.aion2.inject.Slf4jLoggerModule.Slf4jMembersInjector" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Slf4jMembersInjector[T]extendsMembersInjector[T]"></a>
-      <a id="Slf4jMembersInjector[T]:Slf4jMembersInjector[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="Slf4jLoggerModule$$Slf4jMembersInjector.html"><span class="name">Slf4jMembersInjector</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="com.google.inject.MembersInjector">MembersInjector</span>[<span class="extype" name="com.netscout.aion2.inject.Slf4jLoggerModule.Slf4jMembersInjector.T">T</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@Slf4jMembersInjector[T]extendsMembersInjector[T]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="com.netscout.aion2.inject.Slf4jLoggerModule.Slf4jTypeListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Slf4jTypeListenerextendsTypeListener"></a>
-      <a id="Slf4jTypeListener:Slf4jTypeListener"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="Slf4jLoggerModule$$Slf4jTypeListener.html"><span class="name">Slf4jTypeListener</span></a><span class="result"> extends <span class="extype" name="com.google.inject.spi.TypeListener">TypeListener</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@Slf4jTypeListenerextendsTypeListener" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li></ol>
-            </div>
+        
 
         
 
@@ -143,7 +107,7 @@
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -160,7 +124,7 @@
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@##():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@##():Int" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -177,7 +141,7 @@
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -194,7 +158,7 @@
         <span class="name">addError</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.spi.Message">Message</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@addError(x$1:com.google.inject.spi.Message):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@addError(x$1:com.google.inject.spi.Message):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -211,7 +175,7 @@
         <span class="name">addError</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@addError(x$1:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@addError(x$1:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -228,13 +192,13 @@
         <span class="name">addError</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.&lt;repeated...&gt;">&lt;repeated...&gt;</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@addError(x$1:String,x$2:Object*):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@addError(x$1:String,x$2:Object*):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../google$inject.html" class="extype" name="com.google.inject">com.google.inject</a>] </dd><dt>Definition Classes</dt><dd>AbstractModule</dd></dl></div>
     </li><li name="net.codingwell.scalaguice.InternalModule#annotatedWith" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="annotatedWith[A&lt;:java.lang.annotation.Annotation](implicitevidence$3:Manifest[A]):com.google.inject.matcher.Matcher[java.lang.reflect.AnnotatedElement]"></a>
+      <a id="annotatedWith[A&lt;:&lt;?&gt;](implicitevidence$3:&lt;?&gt;):com.google.inject.matcher.Matcher[java.lang.reflect.AnnotatedElement]"></a>
       <a id="annotatedWith[A&lt;:Annotation](Manifest[A]):Matcher[AnnotatedElement]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -245,7 +209,7 @@
         <span class="name">annotatedWith</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="java.lang.annotation.Annotation">Annotation</span></span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.annotatedWith.A">A</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[<span class="extype" name="java.lang.reflect.AnnotatedElement">AnnotatedElement</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@annotatedWith[A&lt;:java.lang.annotation.Annotation](implicitevidence$3:Manifest[A]):com.google.inject.matcher.Matcher[java.lang.reflect.AnnotatedElement]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@annotatedWith[A&lt;:java.lang.annotation.Annotation](implicitevidence$3:Manifest[A]):com.google.inject.matcher.Matcher[java.lang.reflect.AnnotatedElement]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -262,7 +226,7 @@
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -279,7 +243,7 @@
         <span class="name">bind</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.bind.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="net.codingwell.scalaguice.ScalaModule.ScalaAnnotatedBindingBuilder">ScalaAnnotatedBindingBuilder</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.bind.T">T</span>] { ... /* 2 definitions in type refinement */ }</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bind[T](implicitevidence$1:Manifest[T]):net.codingwell.scalaguice.ScalaModule.ScalaAnnotatedBindingBuilder[T]{valmyBinder:B;valself:com.google.inject.binder.AnnotatedBindingBuilder[T]}" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bind[T](implicitevidence$1:Manifest[T]):net.codingwell.scalaguice.ScalaModule.ScalaAnnotatedBindingBuilder[T]{valmyBinder:B;valself:com.google.inject.binder.AnnotatedBindingBuilder[T]}" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -296,7 +260,7 @@
         <span class="name">bind</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Class">Class</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.binder.AnnotatedBindingBuilder">AnnotatedBindingBuilder</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bind[T](x$1:Class[T]):com.google.inject.binder.AnnotatedBindingBuilder[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bind[T](x$1:Class[T]):com.google.inject.binder.AnnotatedBindingBuilder[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -313,7 +277,7 @@
         <span class="name">bind</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.TypeLiteral">TypeLiteral</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.binder.AnnotatedBindingBuilder">AnnotatedBindingBuilder</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bind[T](x$1:com.google.inject.TypeLiteral[T]):com.google.inject.binder.AnnotatedBindingBuilder[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bind[T](x$1:com.google.inject.TypeLiteral[T]):com.google.inject.binder.AnnotatedBindingBuilder[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -330,7 +294,7 @@
         <span class="name">bind</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.Key">Key</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.binder.LinkedBindingBuilder">LinkedBindingBuilder</span>[<span class="extype" name="com.google.inject.AbstractModule.bind.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bind[T](x$1:com.google.inject.Key[T]):com.google.inject.binder.LinkedBindingBuilder[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bind[T](x$1:com.google.inject.Key[T]):com.google.inject.binder.LinkedBindingBuilder[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -347,7 +311,7 @@
         <span class="name">bindConstant</span><span class="params">()</span><span class="result">: <span class="extype" name="com.google.inject.binder.AnnotatedConstantBindingBuilder">AnnotatedConstantBindingBuilder</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindConstant():com.google.inject.binder.AnnotatedConstantBindingBuilder" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindConstant():com.google.inject.binder.AnnotatedConstantBindingBuilder" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -364,7 +328,7 @@
         <span class="name">bindInterceptor</span><span class="tparams">[<span name="I">I &lt;: <span class="extype" name="org.aopalliance.intercept.MethodInterceptor">MethodInterceptor</span></span>]</span><span class="params">(<span name="classMatcher">classMatcher: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>, <span name="methodMatcher">methodMatcher: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="java.lang.reflect.AnnotatedElement">AnnotatedElement</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.bindInterceptor.I">I</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindInterceptor[I&lt;:org.aopalliance.intercept.MethodInterceptor](classMatcher:com.google.inject.matcher.Matcher[_&gt;:Class[_]],methodMatcher:com.google.inject.matcher.Matcher[_&gt;:java.lang.reflect.AnnotatedElement])(implicitevidence$2:Manifest[I]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindInterceptor[I&lt;:org.aopalliance.intercept.MethodInterceptor](classMatcher:com.google.inject.matcher.Matcher[_&gt;:Class[_]],methodMatcher:com.google.inject.matcher.Matcher[_&gt;:java.lang.reflect.AnnotatedElement])(implicitevidence$2:Manifest[I]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -381,7 +345,7 @@
         <span class="name">bindInterceptor</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="java.lang.Class">Class</span>[_]]</span>, <span name="arg1">arg1: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="java.lang.reflect.Method">Method</span>]</span>, <span name="arg2">arg2: <span class="extype" name="scala.&lt;repeated...&gt;">&lt;repeated...&gt;</span>[<span class="extype" name="org.aopalliance.intercept.MethodInterceptor">MethodInterceptor</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindInterceptor(x$1:com.google.inject.matcher.Matcher[_&gt;:Class[_]],x$2:com.google.inject.matcher.Matcher[_&gt;:java.lang.reflect.Method],x$3:org.aopalliance.intercept.MethodInterceptor*):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindInterceptor(x$1:com.google.inject.matcher.Matcher[_&gt;:Class[_]],x$2:com.google.inject.matcher.Matcher[_&gt;:java.lang.reflect.Method],x$3:org.aopalliance.intercept.MethodInterceptor*):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -398,7 +362,7 @@
         <span class="name">bindListener</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="com.google.inject.Binding">Binding</span>[_]]</span>, <span name="arg1">arg1: <span class="extype" name="scala.&lt;repeated...&gt;">&lt;repeated...&gt;</span>[<span class="extype" name="com.google.inject.spi.ProvisionListener">ProvisionListener</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindListener(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.Binding[_]],x$2:com.google.inject.spi.ProvisionListener*):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindListener(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.Binding[_]],x$2:com.google.inject.spi.ProvisionListener*):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -415,7 +379,7 @@
         <span class="name">bindListener</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="com.google.inject.TypeLiteral">TypeLiteral</span>[_]]</span>, <span name="arg1">arg1: <span class="extype" name="com.google.inject.spi.TypeListener">TypeListener</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindListener(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.TypeLiteral[_]],x$2:com.google.inject.spi.TypeListener):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindListener(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.TypeLiteral[_]],x$2:com.google.inject.spi.TypeListener):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -432,7 +396,7 @@
         <span class="name">bindScope</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="java.lang.annotation.Annotation">Annotation</span></span>]</span><span class="params">(<span name="scope">scope: <span class="extype" name="com.google.inject.Scope">Scope</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.bindScope.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindScope[T&lt;:java.lang.annotation.Annotation](scope:com.google.inject.Scope)(implicitevidence$4:Manifest[T]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindScope[T&lt;:java.lang.annotation.Annotation](scope:com.google.inject.Scope)(implicitevidence$4:Manifest[T]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -449,7 +413,7 @@
         <span class="name">bindScope</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Class">Class</span>[_ &lt;: <span class="extype" name="java.lang.annotation.Annotation">Annotation</span>]</span>, <span name="arg1">arg1: <span class="extype" name="com.google.inject.Scope">Scope</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@bindScope(x$1:Class[_&lt;:java.lang.annotation.Annotation],x$2:com.google.inject.Scope):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@bindScope(x$1:Class[_&lt;:java.lang.annotation.Annotation],x$2:com.google.inject.Scope):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -466,7 +430,7 @@
         <span class="name">binder</span><span class="params">()</span><span class="result">: <span class="extype" name="com.google.inject.Binder">Binder</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@binder():com.google.inject.Binder" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@binder():com.google.inject.Binder" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -483,7 +447,7 @@
         <span class="name">binderAccess</span><span class="result">: <span class="extype" name="com.google.inject.Binder">Binder</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@binderAccess:com.google.inject.Binder" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@binderAccess:com.google.inject.Binder" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -500,7 +464,7 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@clone():Object" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -511,7 +475,7 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="com.netscout.aion2.inject.Slf4jLoggerModule#configure" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.netscout.aion2.inject.SystemPropertiesModule#configure" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="configure():Unit"></a>
       <a id="configure():Unit"></a>
       <h4 class="signature">
@@ -523,11 +487,11 @@
         <span class="name">configure</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@configure():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@configure():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.inject.Slf4jLoggerModule">Slf4jLoggerModule</a> → AbstractModule</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.netscout.aion2.inject.SystemPropertiesModule">SystemPropertiesModule</a> → AbstractModule</dd></dl></div>
     </li><li name="com.google.inject.AbstractModule#configure" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="configure(x$1:com.google.inject.Binder):Unit"></a>
       <a id="configure(Binder):Unit"></a>
@@ -540,7 +504,7 @@
         <span class="name">configure</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.Binder">Binder</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@configure(x$1:com.google.inject.Binder):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@configure(x$1:com.google.inject.Binder):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -557,7 +521,7 @@
         <span class="name">convertToTypes</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.matcher.Matcher">Matcher</span>[_ &gt;: <span class="extype" name="com.google.inject.TypeLiteral">TypeLiteral</span>[_]]</span>, <span name="arg1">arg1: <span class="extype" name="com.google.inject.spi.TypeConverter">TypeConverter</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@convertToTypes(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.TypeLiteral[_]],x$2:com.google.inject.spi.TypeConverter):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@convertToTypes(x$1:com.google.inject.matcher.Matcher[_&gt;:com.google.inject.TypeLiteral[_]],x$2:com.google.inject.spi.TypeConverter):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -574,7 +538,7 @@
         <span class="name">currentStage</span><span class="params">()</span><span class="result">: <span class="extype" name="com.google.inject.Stage">Stage</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@currentStage():com.google.inject.Stage" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@currentStage():com.google.inject.Stage" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -591,7 +555,7 @@
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -608,7 +572,7 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@equals(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -625,7 +589,7 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -648,7 +612,7 @@
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getClass():Class[_]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -665,7 +629,7 @@
         <span class="name">getMembersInjector</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.getMembersInjector.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.MembersInjector">MembersInjector</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.getMembersInjector.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getMembersInjector[T](implicitevidence$7:Manifest[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getMembersInjector[T](implicitevidence$7:Manifest[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -682,7 +646,7 @@
         <span class="name">getMembersInjector</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.TypeLiteral">TypeLiteral</span>[<span class="extype" name="com.google.inject.AbstractModule.getMembersInjector.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.MembersInjector">MembersInjector</span>[<span class="extype" name="com.google.inject.AbstractModule.getMembersInjector.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getMembersInjector[T](x$1:com.google.inject.TypeLiteral[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getMembersInjector[T](x$1:com.google.inject.TypeLiteral[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -699,7 +663,7 @@
         <span class="name">getMembersInjector</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Class">Class</span>[<span class="extype" name="com.google.inject.AbstractModule.getMembersInjector.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.MembersInjector">MembersInjector</span>[<span class="extype" name="com.google.inject.AbstractModule.getMembersInjector.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getMembersInjector[T](x$1:Class[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getMembersInjector[T](x$1:Class[T]):com.google.inject.MembersInjector[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -716,7 +680,7 @@
         <span class="name">getProvider</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.getProvider.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.Provider">Provider</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.getProvider.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getProvider[T](implicitevidence$6:Manifest[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getProvider[T](implicitevidence$6:Manifest[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -733,7 +697,7 @@
         <span class="name">getProvider</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Class">Class</span>[<span class="extype" name="com.google.inject.AbstractModule.getProvider.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.Provider">Provider</span>[<span class="extype" name="com.google.inject.AbstractModule.getProvider.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getProvider[T](x$1:Class[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getProvider[T](x$1:Class[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -750,7 +714,7 @@
         <span class="name">getProvider</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.Key">Key</span>[<span class="extype" name="com.google.inject.AbstractModule.getProvider.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.google.inject.Provider">Provider</span>[<span class="extype" name="com.google.inject.AbstractModule.getProvider.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@getProvider[T](x$1:com.google.inject.Key[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@getProvider[T](x$1:com.google.inject.Key[T]):com.google.inject.Provider[T]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -767,7 +731,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@hashCode():Int" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@hashCode():Int" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -784,7 +748,7 @@
         <span class="name">install</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.Module">Module</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@install(x$1:com.google.inject.Module):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@install(x$1:com.google.inject.Module):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -801,7 +765,7 @@
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -818,7 +782,7 @@
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -835,7 +799,7 @@
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -852,7 +816,7 @@
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -869,7 +833,7 @@
         <span class="name">requestInjection</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@requestInjection(x$1:Any):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@requestInjection(x$1:Any):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -886,7 +850,7 @@
         <span class="name">requestStaticInjection</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.Predef.Manifest">Manifest</span>[<span class="extype" name="net.codingwell.scalaguice.InternalModule.requestStaticInjection.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@requestStaticInjection[T]()(implicitevidence$5:Manifest[T]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@requestStaticInjection[T]()(implicitevidence$5:Manifest[T]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -903,7 +867,7 @@
         <span class="name">requestStaticInjection</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.&lt;repeated...&gt;">&lt;repeated...&gt;</span>[<span class="extype" name="java.lang.Class">Class</span>[_]]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@requestStaticInjection(x$1:Class[_]*):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@requestStaticInjection(x$1:Class[_]*):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -920,7 +884,7 @@
         <span class="name">requireBinding</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Class">Class</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@requireBinding(x$1:Class[_]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@requireBinding(x$1:Class[_]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -937,7 +901,7 @@
         <span class="name">requireBinding</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="com.google.inject.Key">Key</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@requireBinding(x$1:com.google.inject.Key[_]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@requireBinding(x$1:com.google.inject.Key[_]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -954,7 +918,7 @@
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -971,7 +935,7 @@
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@toString():String" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@toString():String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -988,7 +952,7 @@
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1011,7 +975,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1034,7 +998,7 @@
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.inject.Slf4jLoggerModule$@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.inject.SystemPropertiesModule$@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
