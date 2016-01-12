@@ -6,14 +6,68 @@ import com.github.racc.tscg.TypesafeConfig
 import com.google.inject.Inject
 import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig, QueryStrategy, DataSource}
 
+import scala.beans.BeanProperty
+
+/**
+ * Bean class representing the configuration of a keyspace in
+ * Cassandra
+ */
+class CassandraKeyspaceConfig {
+  /**
+   * The name of the keyspace
+   */
+  @BeanProperty var name: String = null
+
+  /**
+   * Description of the keyspace's replication strategy
+   */
+  @BeanProperty var replication: CassandraKeyspaceReplicationConfig = null
+}
+
+/**
+ * Bean class representing the configuration of a keyspace's replication
+ * strategy in Cassandra
+ */
+class CassandraKeyspaceReplicationConfig {
+  /**
+   * Value of 'class' in the replication strategy map.
+   *
+   * Renamed to deal with naming conflicts
+   */
+  @BeanProperty var clazz: String = null
+
+  /**
+   * Value of 'replication_factor' in the replication strategy map.
+   *
+   * Renamed to fit Java/Scala naming conventions
+   */
+  @BeanProperty var replicationFactor: Int = 1
+
+  override def toString = {
+    s"{\'class\': \'${clazz}\', \'replication_factor\': ${replicationFactor}}"
+  }
+}
+
 class CassandraDataSource @Inject() (
-  @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceName: String,
+  @TypesafeConfig("com.netscout.aion2.cassandra.keyspace") val keyspaceConfig: CassandraKeyspaceConfig,
   val mapper: ObjectMapper,
   val session: Session
 ) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
   import java.util.UUID
   import scala.collection.JavaConversions._
+
+  // TODO: Refactor out usages of keyspaceName -> keyspaceConfig.name?
+  /**
+   * Convenience method for accessing the keyspace name.
+   *
+   * Included because legacy code used to access the keyspaceName
+   * variable, but it was removed when keyspace configuration became
+   * more complex.
+   *
+   * @return the name of the keyspace for this [[com.netscout.aion2.model.DataSource]]
+   */
+  def keyspaceName = keyspaceConfig.name
 
   /**
    * Additional methods for AionObjectConfig used by
@@ -88,7 +142,19 @@ class CassandraDataSource @Inject() (
     case x => x
   }
 
+  /**
+   * Convenience method for initializing the keyspace for this
+   * [[com.netscout.aion2.source.CassandraDataSource]]
+   */
+  def initializeKeyspace {
+    val queryStr = s"CREATE KEYSPACE IF NOT EXISTS ${keyspaceName} WITH REPLICATION = ${keyspaceConfig.replication}"
+    session.execute(queryStr)
+  }
+
   override def initializeSchema(objects: Set[AionObjectConfig]) {
+    // First initialize the keyspace
+    initializeKeyspace
+
     // This guard is needed because reduce will throw UnsupportedOperationException
     // if there are no objects in the schema
     if (objects.size > 0) {

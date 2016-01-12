@@ -58,8 +58,15 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val f = defaultFixture
     f.uut.initializeSchema(schemaProvider.schema)
 
-    // Because there's 3 indices 
-    verify(f.testModule.session, times(3)).execute(anyString())
+    // Because there's 3 indices and one keyspace
+    verify(f.testModule.session, times(4)).execute(anyString())
+  }
+
+  it should "create correct keyspace in initializeSchema" in {
+    val f = defaultFixture
+    f.uut.initializeSchema(Set())
+
+    verify(f.testModule.session).execute("CREATE KEYSPACE IF NOT EXISTS aion WITH REPLICATION = {\'class\': \'SimpleStrategy\', \'replication_factor\': 1}")
   }
 
   it should "create correct table for single partition key index" in {
