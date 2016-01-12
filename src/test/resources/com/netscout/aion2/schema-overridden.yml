@@ -1,0 +1,18 @@
+---
+objects:
+  - name: data
+    fields:
+      time: timeuuid
+      value: double
+    indices:
+      - name: time
+        partition: []
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P1D
+        clustering:
+          field: time
+          order: DESC
