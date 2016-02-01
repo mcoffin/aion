@@ -1,6 +1,5 @@
 package com.netscout.aion2.resources
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.Inject
 import com.netscout.aion2.model.AionObjectConfig
 
@@ -11,9 +10,7 @@ import javax.ws.rs.core.MediaType._
 import scala.collection.JavaConversions._
 
 @Path("/schema")
-class Schema @Inject() (
-  val mapper: ObjectMapper
-) {
+class Schema @Inject() {
   val schema: scala.collection.mutable.Set[AionObjectConfig] = scala.collection.mutable.Set.empty
 
   /**
@@ -23,6 +20,10 @@ class Schema @Inject() (
     schema ++= newSchema
   }
 
+  private def schemaMap = schema.map(obj => {
+    (obj.name, obj)
+  }).toMap
+
   private def fieldsSchema = schema.map(obj => {
     (obj.name, obj.fields)
   }).toMap
@@ -30,13 +31,17 @@ class Schema @Inject() (
   @GET
   @Produces(Array(APPLICATION_JSON))
   def getSchema = {
-    val stream = new StreamingOutput {
-      import java.io.OutputStream
+    import scala.collection.JavaConverters._
 
-      override def write(output: OutputStream) {
-        mapper.writeValue(output, fieldsSchema)
-      }
-    }
-    Response.ok(stream).build()
+    fieldsSchema.asJava
+  }
+
+  @GET
+  @Path("{name}")
+  @Produces(Array(APPLICATION_JSON))
+  def getObject(@PathParam("name") name: String) = {
+    import javax.ws.rs.core.Response.Status._
+
+    schemaMap.get(name).getOrElse(throw new WebApplicationException(NOT_FOUND))
   }
 }

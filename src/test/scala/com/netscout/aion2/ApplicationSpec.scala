@@ -107,7 +107,9 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
     val uut = f.app
     f.testModule.resourceConfig.getClasses should not be (null)
     f.testModule.resourceConfig.getSingletons should not be (null)
-    f.testModule.resourceConfig.resourceCount shouldBe f.app.hardCodedResources.size
+
+    // The extra one here is for JacksonFeature
+    f.testModule.resourceConfig.resourceCount shouldBe (f.app.hardCodedResources.size + 1)
   }
 
   it should "register resources of complete schema" in {
