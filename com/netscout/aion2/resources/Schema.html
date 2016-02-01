@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.netscout.aion2.resources.Schema#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(mapper:com.fasterxml.jackson.databind.ObjectMapper):com.netscout.aion2.resources.Schema"></a>
+      <a id="&lt;init&gt;():com.netscout.aion2.resources.Schema"></a>
       <a id="&lt;init&gt;:Schema"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Schema</span><span class="params">(<span name="mapper">mapper: <span class="extype" name="com.fasterxml.jackson.databind.ObjectMapper">ObjectMapper</span></span>)</span>
+        <span class="name">Schema</span><span class="params">()</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@&lt;init&gt;(mapper:com.fasterxml.jackson.databind.ObjectMapper):com.netscout.aion2.resources.Schema" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@&lt;init&gt;():com.netscout.aion2.resources.Schema" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -285,19 +285,43 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="com.netscout.aion2.resources.Schema#getSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getSchema:javax.ws.rs.core.Response"></a>
-      <a id="getSchema:Response"></a>
+    </li><li name="com.netscout.aion2.resources.Schema#getObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getObject(name:String):com.netscout.aion2.model.AionObjectConfig"></a>
+      <a id="getObject(String):AionObjectConfig"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getSchema</span><span class="result">: <span class="extype" name="javax.ws.rs.core.Response">Response</span></span>
+        <span class="name">getObject</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../model/AionObjectConfig.html" class="extype" name="com.netscout.aion2.model.AionObjectConfig">AionObjectConfig</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@getSchema:javax.ws.rs.core.Response" title="Permalink" target="_top">
+      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@getObject(name:String):com.netscout.aion2.model.AionObjectConfig" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@GET</span><span class="args">()</span>
+              
+                <span class="name">@Path</span><span class="args">()</span>
+              
+                <span class="name">@Produces</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.netscout.aion2.resources.Schema#getSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSchema:java.util.Map[String,java.util.Map[String,String]]"></a>
+      <a id="getSchema:Map[String,Map[String,String]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSchema</span><span class="result">: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@getSchema:java.util.Map[String,java.util.Map[String,String]]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -341,23 +365,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.netscout.aion2.resources.Schema#mapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mapper:com.fasterxml.jackson.databind.ObjectMapper"></a>
-      <a id="mapper:ObjectMapper"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">mapper</span><span class="result">: <span class="extype" name="com.fasterxml.jackson.databind.ObjectMapper">ObjectMapper</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#com.netscout.aion2.resources.Schema@mapper:com.fasterxml.jackson.databind.ObjectMapper" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
