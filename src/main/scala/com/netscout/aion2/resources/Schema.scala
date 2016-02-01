@@ -23,6 +23,10 @@ class Schema @Inject() (
     schema ++= newSchema
   }
 
+  private def schemaMap = schema.map(obj => {
+    (obj.name, obj)
+  }).toMap
+
   private def fieldsSchema = schema.map(obj => {
     (obj.name, obj.fields)
   }).toMap
@@ -38,5 +42,14 @@ class Schema @Inject() (
       }
     }
     Response.ok(stream).build()
+  }
+
+  @GET
+  @Path("{name}")
+  @Produces(Array(APPLICATION_JSON))
+  def getObject(@PathParam("name") name: String) = {
+    import javax.ws.rs.core.Response.Status._
+
+    schemaMap.get(name).getOrElse(throw new WebApplicationException(NOT_FOUND))
   }
 }

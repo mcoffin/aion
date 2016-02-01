@@ -76,6 +76,7 @@ class Application @Inject() (
   import com.netscout.aion2.model.{AionObjectConfig, AionIndexConfig}
   import com.netscout.aion2.source.CassandraDataSource
   import com.typesafe.config.ConfigException
+  import org.glassfish.jersey.jackson.JacksonFeature
 
   /**
    * List of built-in schema providers
@@ -229,6 +230,9 @@ class Application @Inject() (
       resourceConfig.registerResources(resourceList : _*)
     }
   }
+
+  // Set up Jackson for JAX-RS (jersey impl)
+  resourceConfig.register(classOf[JacksonFeature])
 
   // This registers all the resources found by the default schema providers
   builtinSchemaProviders.foreach(registerSchemaProvider(_))
