@@ -6,6 +6,7 @@ objects:
       range: text
       time: timeuuid
       data: blob
+      datam: map<text,blob>
     indices:
       - name: single_partition
         partition:
