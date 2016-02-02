@@ -56,6 +56,8 @@ class CassandraDataSource @Inject() (
   import com.datastax.driver.core.querybuilder.QueryBuilder
   import java.util.UUID
   import scala.collection.JavaConversions._
+  import scala.language.existentials
+  import scala.language.higherKinds
 
   // TODO: Refactor out usages of keyspaceName -> keyspaceConfig.name?
   /**
@@ -174,7 +176,14 @@ class CassandraDataSource @Inject() (
     }
   }
 
-  override def classOfType(t: String) = {
+  private def mapTypeWithArgs[K, V](k: Class[K], v: Class[V]) = classOf[java.util.Map[K, V]]
+
+  private class TypeWithArgBuilder[T[_]] {
+    import scala.reflect.ClassTag
+    def typeWithArg[A](a: Class[A]) (implicit ct: ClassTag[T[A]]) = ct.runtimeClass.asInstanceOf[Class[T[A]]]
+  }
+
+  private def classOfTypeInternal(t: String) = {
     import com.datastax.driver.core.DataType
     import com.datastax.driver.core.DataType.Name._
     import com.fasterxml.jackson.databind.JsonNode
@@ -184,22 +193,42 @@ class CassandraDataSource @Inject() (
       case "json" => classOf[JsonNode]
       case _ => {
         try {
-          val cqlType = DataType.Name.valueOf(t.toUpperCase)
-          cqlType match {
-            case ASCII => classOf[String]
-            case BIGINT => classOf[java.lang.Long]
-            case BLOB => classOf[java.nio.ByteBuffer]
-            case BOOLEAN => classOf[Boolean]
-            case COUNTER => classOf[Long]
-            case DECIMAL => classOf[java.math.BigDecimal]
-            case DOUBLE => classOf[Double]
-            case FLOAT => classOf[Float]
-            case INT => classOf[Int]
-            case TIMESTAMP => classOf[java.util.Date]
-            case TIMEUUID => classOf[java.util.UUID]
-            case DataType.Name.UUID => classOf[java.util.UUID]
-            case TEXT => classOf[String]
-            case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+          val mapPattern = "map\\<(\\w+),\\s*(\\w+)\\>".r
+          val setPattern = "set\\<(\\w+)\\>".r
+          val listPattern = "list\\<(\\w+)\\>".r
+          t match {
+            case mapPattern(keyType, valueType) => {
+              val typeParams = Seq(keyType, valueType)
+              val instantiatedParams = typeParams.map(classOfType(_))
+              mapTypeWithArgs(instantiatedParams(0), instantiatedParams(1))
+            }
+            case setPattern(typeArg) => {
+              val c = new TypeWithArgBuilder[java.util.Set].typeWithArg(classOfType(typeArg))
+              c
+            }
+            case listPattern(typeArg) => {
+              val c = new TypeWithArgBuilder[java.util.List].typeWithArg(classOfType(typeArg))
+              c
+            }
+            case _ => {
+              val cqlType = DataType.Name.valueOf(t.toUpperCase)
+              cqlType match {
+                case ASCII => classOf[String]
+                case BIGINT => classOf[java.lang.Long]
+                case BLOB => classOf[java.nio.ByteBuffer]
+                case BOOLEAN => classOf[Boolean]
+                case COUNTER => classOf[Long]
+                case DECIMAL => classOf[java.math.BigDecimal]
+                case DOUBLE => classOf[Double]
+                case FLOAT => classOf[Float]
+                case INT => classOf[Int]
+                case TIMESTAMP => classOf[java.util.Date]
+                case TIMEUUID => classOf[java.util.UUID]
+                case DataType.Name.UUID => classOf[java.util.UUID]
+                case TEXT => classOf[String]
+                case _ => throw new Exception(s"Invalid CQL type ${cqlType}")
+              }
+            }
           }
         } catch {
           case (e: IllegalArgumentException) => throw new IllegalTypeException(t, e)
@@ -207,6 +236,8 @@ class CassandraDataSource @Inject() (
       }
     }
   }
+
+  override def classOfType(t: String): Class[_] = classOfTypeInternal(t)
 
   /**
    * Gets a column family name for a given object and index pairing

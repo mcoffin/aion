@@ -96,7 +96,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_no_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row), time))")
   }
 
-  it should "map classes for cassandra types" in {
+  it should "map classes for cassandra primitive types" in {
     val f = defaultFixture
 
     val typesToTest = Seq(
@@ -117,6 +117,27 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     for (t <- typesToTest) {
       f.uut.classOfType(t) should not be (null)
     }
+  }
+
+  it should "map classes for cassandra map type" in {
+    val f = defaultFixture
+
+    val c = f.uut.classOfType("map<text,text>")
+    c should equal (classOf[java.util.Map[String, String]])
+  }
+
+  it should "map classes for cassandra set type" in {
+    val f = defaultFixture
+
+    val c = f.uut.classOfType("set<text>")
+    c should equal (classOf[java.util.Set[String]])
+  }
+
+  it should "map classes for cassandra list type" in {
+    val f = defaultFixture
+
+    val c = f.uut.classOfType("list<text>")
+    c shouldEqual classOf[java.util.List[String]]
   }
 
   it should "throw IllegalTypeException for an unrecognized type" in {
