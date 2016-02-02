@@ -1,5 +1,27 @@
 ---
 objects:
+  - name: playdough_test_results
+    fields:
+      time: timestamp
+      org: uuid
+      pulse: uuid
+      test: uuid
+      metrics: map<text,double>
+    indices:
+      - name: org_pulse_test
+        partition:
+          - org
+          - pulse
+          - test
+        split:
+          column: time
+          strategy:
+            name: duration
+            config:
+              duration: P30D
+        clustering:
+          field: time
+          order: DESC
   - name: redstone_defect_stats
     fields:
       time: timeuuid
