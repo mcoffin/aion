@@ -11,6 +11,8 @@ import org.mockito.BDDMockito._
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 
+import scala.reflect.ClassTag
+
 class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
   import com.netscout.aion2.{AionConfig, ApplicationSpec}
   import com.typesafe.config.ConfigFactory
@@ -119,25 +121,34 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     }
   }
 
+  /**
+   * Convenience method for checking that a class matches a given type
+   *
+   * @param c The class to check against type T
+   */
+  private def classShouldBeOfType[T](c: Class[_]) (implicit tct: ClassTag[T]) {
+    c shouldEqual tct.runtimeClass
+  }
+
   it should "map classes for cassandra map type" in {
     val f = defaultFixture
 
     val c = f.uut.classOfType("map<text,text>")
-    c should equal (classOf[java.util.Map[String, String]])
+    classShouldBeOfType[java.util.Map[String, String]](c)
   }
 
   it should "map classes for cassandra set type" in {
     val f = defaultFixture
 
     val c = f.uut.classOfType("set<text>")
-    c should equal (classOf[java.util.Set[String]])
+    classShouldBeOfType[java.util.Set[String]](c)
   }
 
   it should "map classes for cassandra list type" in {
     val f = defaultFixture
 
     val c = f.uut.classOfType("list<text>")
-    c shouldEqual classOf[java.util.List[String]]
+    classShouldBeOfType[java.util.List[String]](c)
   }
 
   it should "throw IllegalTypeException for an unrecognized type" in {
