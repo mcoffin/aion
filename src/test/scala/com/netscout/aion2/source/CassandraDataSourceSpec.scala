@@ -75,7 +75,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val f = defaultFixture
     f.uut.initializeSchema(schemaProvider.schema)
 
-    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_single_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row, partition), time))")
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_single_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, datam map<text,blob>, PRIMARY KEY ((time_row, partition), time))")
   }
 
   it should "create correct table for double partition key index" in {
@@ -84,7 +84,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val f = defaultFixture
     f.uut.initializeSchema(schemaProvider.schema)
 
-    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_double_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row, partition, range), time))")
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_double_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, datam map<text,blob>, PRIMARY KEY ((time_row, partition, range), time))")
   }
 
   it should "create correct table for no partition key index" in {
@@ -93,7 +93,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val f = defaultFixture
     f.uut.initializeSchema(schemaProvider.schema)
 
-    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_no_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, PRIMARY KEY ((time_row), time))")
+    verify(f.testModule.session).execute("CREATE TABLE IF NOT EXISTS aion.foo_no_partition (time_row timestamp, partition text, range text, time timeuuid, data blob, datam map<text,blob>, PRIMARY KEY ((time_row), time))")
   }
 
   it should "map classes for cassandra primitive types" in {
@@ -180,10 +180,10 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val response = f.uut.executeQuery(obj, index, queryStrategy, Map("partition" -> "somePartition"))
 
     verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
-      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data FROM aion.foo_single_partition WHERE partition='somePartition' AND time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
+      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE partition='somePartition' AND time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
     }))
     verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
-      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data FROM aion.foo_single_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli} AND partition='somePartition';"
+      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli} AND partition='somePartition';"
     }))
   }
 

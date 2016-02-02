@@ -164,7 +164,8 @@ class ApplicationSpec extends FlatSpec with Matchers with MockitoSugar {
         "partition" -> "text",
         "range" -> "text",
         "time" -> "timeuuid",
-        "data" -> "blob"
+        "data" -> "blob",
+        "datam" -> "map<text,blob>"
       )
     )
   }
