@@ -1,6 +1,7 @@
 package com.netscout.aion2.source
 
 import com.google.inject.{Guice, Module, AbstractModule}
+import com.netscout.aion2.test.AionMockitoSugar
 
 import net.codingwell.scalaguice.ScalaModule
 import net.codingwell.scalaguice.InjectorExtensions._
@@ -186,7 +187,7 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     when(returnedResults.all).thenReturn(new java.util.LinkedList[Row])
 
     given(f.testModule.session.execute(anyString())).willReturn(returnedResults)
-    given(f.testModule.session.execute(any(classOf[Statement]))).willReturn(returnedResults)
+    given(f.testModule.session.execute(AionMockitoSugar.any[Statement])).willReturn(returnedResults)
     
     val response = f.uut.executeQuery(obj, index, queryStrategy, Map("partition" -> "somePartition"))
 
@@ -215,6 +216,6 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     ))
 
     // should only be one query because it should be a batched query
-    verify(f.testModule.session, times(1)).execute(any(classOf[Statement])) // TODO: better statement matching here
+    verify(f.testModule.session, times(1)).execute(AionMockitoSugar.any[Statement]) // TODO: better statement matching here
   }
 }
