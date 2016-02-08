@@ -117,27 +117,56 @@ class DurationSplitStrategy(maybeCfg: Option[Map[String, String]]) extends Split
     outputDate
   }
 
+  /**
+   * Convenience method to parse an Instant from a query parameter string
+   *
+   * Supports "now" strings, or ISO8601 formatted strings
+   *
+   * @see java.time.Instant.parse
+   * @param str the query parameter string to parse
+   * @return a java.time.Instant represented by str
+   */
+  def parseInstant(str: String) = str match {
+    case "now" => Instant.now()
+    case _ => Instant.parse(str)
+  }
+
+  /**
+   * Implicit extensions to MultivaluedMap for retreiving query
+   * parameters that should have exactly one value
+   */
+  implicit class MultivaluedMapExtensions[K, V](
+    val map: MultivaluedMap[K, V]
+  ) {
+    /**
+     * Gets a parameter that should have only one value
+     *
+     * @param key the key to look up in the map
+     * @return (optionally) the first value in the map for the desired key
+     */
+    def getSingleValue(key: String) = for {
+      values <- Option(map.get(key))
+      value <- Option(values.get(0))
+    } yield value
+  }
+
   override def strategyForQuery(params: MultivaluedMap[String, String]): QueryStrategy = {
+    // Gets a single-valued param from the multivaluedmap of parameters
+    def getManditoryParam(paramName: String) = params.getSingleValue(paramName).getOrElse(throw new IllegalQueryException(s"\'${paramName}\' parameter must be supplied"))
+    val parseParam = parseInstant _ compose getManditoryParam _
+
     var fromDate: Instant = null
     var toDate: Instant = null
+
     try {
-      fromDate = Instant.parse(params.get("from").get(0) match {
-        case null => throw new IllegalQueryException("\'from\' parameter must be supplied", null)
-        case x => x
-      })
-      toDate = Instant.parse(params.get("to").get(0) match {
-        case null => throw new IllegalQueryException("\'to\' parameter must be supplied", null)
-        case x => x
-      })
+      fromDate = parseParam("from")
+      toDate = parseParam("to")
       if (fromDate == null || toDate == null) {
         throw new Exception("Both \'from\' and \'to\' must parse to non-null dates")
       }
     } catch {
-      case (e: NullPointerException) => {
-        throw new IllegalQueryException("Both \'from\' and \'to\' query parameters must be supplied", null)
-      }
       case (e: Exception) => {
-        throw new IllegalQueryException("", e)
+        throw new IllegalQueryException("", e) // TODO: investigate why this was ever needed
       }
     }
 

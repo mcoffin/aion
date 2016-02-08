@@ -62,6 +62,32 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     }
   }
 
+  it should "accept \"now\" as a valid duration parameter" in {
+    import com.netscout.aion2.model.QueryStrategy
+    import java.util.Date
+
+    val uut = new DurationSplitStrategy(Some(config("P30D")))
+    val paramMap = new MultivaluedHashMap[String, String]
+    val minimum = Instant.now.minus(1, DAYS)
+    paramMap.add("from", minimum.toString)
+    paramMap.add("to", "now")
+    var maybeStrategy: Option[QueryStrategy] = None
+    noException should be thrownBy {
+      maybeStrategy = Option(uut.strategyForQuery(paramMap))
+    }
+    val strategyMinimum = (for {
+      strategy <- maybeStrategy
+      minimum <- Some(strategy.minimum.asInstanceOf[Date])
+    } yield minimum.toInstant).getOrElse(throw new Exception("a null or bad QueryStrategy was returned"))
+    strategyMinimum shouldEqual minimum
+    val strategyMaximum = (for {
+      strategy <- maybeStrategy
+      maximum <- Some(strategy.maximum.asInstanceOf[Date])
+    } yield maximum.toInstant).getOrElse(throw new Exception("a null or bad QueryStrategy was returned"))
+    val timeDiff = Math.abs(strategyMaximum.getEpochSecond - Instant.now.getEpochSecond)
+    timeDiff should be < 10L
+  }
+
   it should "throw IllegalQueryException when parameters aren't dates" in {
     val uut = new DurationSplitStrategy(Some(config("P30D")))
     val paramMap = new MultivaluedHashMap[String, String](2)
