@@ -134,17 +134,6 @@ class CassandraDataSource @Inject() (
   private def splitRowKey(columnName: String) = s"${columnName}_row"
 
   /**
-   * Gets the type for the row key given a split key type
-   *
-   * @param splitKeyType the type of the regular split key column
-   * @return the name of the type for the split row key column
-   */
-  private def rowKeyType(splitKeyType: String) = splitKeyType match {
-    case "timeuuid" => "timestamp"
-    case x => x
-  }
-
-  /**
    * Convenience method for initializing the keyspace for this
    * [[com.netscout.aion2.source.CassandraDataSource]]
    */
@@ -165,6 +154,7 @@ class CassandraDataSource @Inject() (
           case (k, v) => s"${k} ${cassandraTypeForType(v)}"
         })
         obj.indices.map(index => {
+          val rowKeyType = cassandraTypeForType _ compose index.split.strategy.strategy.rowKeyType _
           val partitionKeyPrefix = if (index.partition.size > 0) {
             ", "
           } else {

@@ -187,4 +187,14 @@ class DurationSplitStrategySpec extends FlatSpec with Matchers {
     partialRows.head shouldEqual Date.from(Instant.EPOCH)
     partialRows.last shouldEqual Date.from(Instant.EPOCH.plus(1, DAYS))
   }
+
+  it should "return timestamp as rowKeyType for timestamp split key type" in {
+    val uut = new DurationSplitStrategy(Some(config("P1D")))
+    uut.rowKeyType("timestamp") shouldEqual "timestamp"
+  }
+
+  it should "return timestamp as rowKeyType for timeuuid split key type" in {
+    val uut = new DurationSplitStrategy(Some(config("P1D")))
+    uut.rowKeyType("timeuuid") shouldEqual "timestamp"
+  }
 }

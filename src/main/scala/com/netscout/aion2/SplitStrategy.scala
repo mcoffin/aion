@@ -13,6 +13,13 @@ trait SplitStrategy {
   def rowKey(value: Object): Object
 
   /**
+   * Gets the type of the row key for a given split key type
+   *
+   * @param splitKeyType the type of the split key
+   */
+  def rowKeyType(splitKeyType: String): String
+
+  /**
    * Creates a query strategy for a given set of parameters
    */
   def strategyForQuery(parameters: MultivaluedMap[String, String]): QueryStrategy

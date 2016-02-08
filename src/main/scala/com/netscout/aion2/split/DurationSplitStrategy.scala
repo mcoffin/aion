@@ -117,6 +117,11 @@ class DurationSplitStrategy(maybeCfg: Option[Map[String, String]]) extends Split
     outputDate
   }
 
+  override def rowKeyType(splitKeyType: String) = splitKeyType match {
+    case "timeuuid" => "timestamp"
+    case x => x
+  }
+
   override def strategyForQuery(params: MultivaluedMap[String, String]): QueryStrategy = {
     var fromDate: Instant = null
     var toDate: Instant = null
