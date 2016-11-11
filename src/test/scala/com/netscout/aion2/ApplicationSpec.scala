@@ -11,8 +11,8 @@ import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
 import org.glassfish.jersey.test.JerseyTest
-import org.mockito.{Matchers => MockitoMatchers}
-import org.mockito.Matchers._
+import org.mockito.{ArgumentMatchers => MockitoMatchers}
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.BDDMockito._
 import org.scalatest._

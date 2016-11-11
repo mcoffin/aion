@@ -6,7 +6,7 @@ import com.netscout.aion2.test.AionMockitoSugar
 import net.codingwell.scalaguice.ScalaModule
 import net.codingwell.scalaguice.InjectorExtensions._
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.BDDMockito._
 import org.scalatest._
@@ -192,10 +192,10 @@ class CassandraDataSourceSpec extends FlatSpec with Matchers with MockitoSugar {
     val response = f.uut.executeQuery(obj, index, queryStrategy, Map("partition" -> "somePartition"))
 
     verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
-      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE partition='somePartition' AND time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
+      override def matches(obj: Statement) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE partition='somePartition' AND time>=minTimeuuid(${Instant.EPOCH.plus(1, HOURS).toEpochMilli}) AND time<maxTimeuuid(${Instant.EPOCH.plus(2, HOURS).toEpochMilli}) AND time_row=${Instant.EPOCH.toEpochMilli};"
     }))
     verify(f.testModule.session).execute(argThat(new ArgumentMatcher[Statement] {
-      override def matches(obj: Object) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli} AND partition='somePartition';"
+      override def matches(obj: Statement) = obj.toString equals s"SELECT range,system.dateof(time),data,datam FROM aion.foo_single_partition WHERE time_row=${Instant.EPOCH.plus(1, DAYS).toEpochMilli} AND partition='somePartition';"
     }))
   }
 
