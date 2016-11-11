@@ -41,7 +41,7 @@ class ApplicationWrapper extends ResourceConfig {
   }
 
   val injector = Guice.createInjector(
-    TypesafeConfigModule.fromConfig(ConfigFactory.load),
+    TypesafeConfigModule.fromConfigWithPackage(ConfigFactory.load, "com.netscout.aion2"),
     SystemPropertiesModule,
     SchemaProviderModule,
     DataSourceModule,
