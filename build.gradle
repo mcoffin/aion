@@ -88,7 +88,7 @@ scoverageClasses.dependsOn scoverageCopyVersionProperties
 
 // Documentation
 githubPages {
-    repoUri = "https://github.com/FlukeNetworks/aion.git"
+    repoUri = "https://github.com/mcoffin/aion.git"
     pages {
         from "${buildDir}/docs/scaladoc"
     }

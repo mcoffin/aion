@@ -11,5 +11,5 @@ branches:
     - master
 script:
   - ./gradlew check build
-# after_success:
-#   - ./gradlew reportScoverage coveralls publishGhPages
+after_success:
+  - ./gradlew reportScoverage coveralls publishGhPages --stacktrace
