@@ -12,10 +12,10 @@ class CassandraSessionProvider @Inject() (
   @TypesafeConfig("com.netscout.aion2.cassandra.contactPoints") contactPoints: java.util.List[String],
   @TypesafeConfig("com.netscout.aion2.cassandra.port") cassandraPort: Integer
 ) extends Provider[Session] {
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
 
   val cluster = Cluster.builder()
-    .addContactPoints(contactPoints : _*)
+    .addContactPoints(contactPoints.asScala : _*)
     .withPort(cassandraPort)
     .build()
 

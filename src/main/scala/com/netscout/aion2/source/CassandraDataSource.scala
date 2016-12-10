@@ -55,9 +55,10 @@ class CassandraDataSource @Inject() (
 ) extends DataSource {
   import com.datastax.driver.core.querybuilder.QueryBuilder
   import java.util.UUID
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
   import scala.language.existentials
   import scala.language.higherKinds
+
 
   // TODO: Refactor out usages of keyspaceName -> keyspaceConfig.name?
   /**
@@ -161,16 +162,16 @@ class CassandraDataSource @Inject() (
     // if there are no objects in the schema
     if (objects.size > 0) {
       objects.map(obj => {
-        val fieldDefinitions = obj.fields.map(_ match {
+        val fieldDefinitions = obj.fields.asScala.map(_ match {
           case (k, v) => s"${k} ${cassandraTypeForType(v)}"
         })
-        obj.indices.map(index => {
+        obj.indices.asScala.map(index => {
           val partitionKeyPrefix = if (index.partition.size > 0) {
             ", "
           } else {
             ""
           }
-          s"CREATE TABLE IF NOT EXISTS ${keyspaceName}.${columnFamilyName(obj, index)} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition mkString ", "}), ${index.split.column}))"
+          s"CREATE TABLE IF NOT EXISTS ${keyspaceName}.${columnFamilyName(obj, index)} (${splitRowKey(index.split.column)} ${rowKeyType(obj.fields.get(index.split.column).toString)}, ${fieldDefinitions mkString ", "}, PRIMARY KEY ((${splitRowKey(index.split.column)}${partitionKeyPrefix}${index.partition.asScala mkString ", "}), ${index.split.column}))"
         })
       }).reduce(_++_).foreach(session.execute(_))
     }
@@ -247,7 +248,7 @@ class CassandraDataSource @Inject() (
   override def insertQuery(obj: AionObjectConfig, values: Map[String, AnyRef]) {
     import com.netscout.aion2.except._
 
-    val queries = obj.indices.map(index => {
+    val queries = obj.indices.asScala.map(index => {
       val splitStrategy = index.split.strategy.strategy
       val splitKeyValue = splitStrategy.rowKey(values.get(index.split.column) match {
         case Some(v) => v
@@ -273,7 +274,7 @@ class CassandraDataSource @Inject() (
       })
 
       val insertStmt = QueryBuilder.insertInto(keyspaceName, columnFamilyName(obj, index))
-        .values(fieldKeys.toList, fieldValues.toList)
+        .values(fieldKeys.toList.asJava, fieldValues.toList.asJava)
       insertStmt
     })
 
@@ -285,7 +286,7 @@ class CassandraDataSource @Inject() (
     import com.datastax.driver.core.Row
     import com.netscout.aion2.except._
 
-    val partitionClauses = index.partition.map(p => {
+    val partitionClauses = index.partition.asScala.map(p => {
       val pValue = partitionKey.get(p) match {
         case Some(v) => v
         case None => throw new IllegalQueryException(s"Partition key parameter ${p} must be present to query against index ${index.name}")
@@ -302,7 +303,7 @@ class CassandraDataSource @Inject() (
       case _ => query.maximum
     }
 
-    val selectedFields = obj.fields.keys.filter(f => !index.partition.contains(f))
+    val selectedFields = obj.fields.asScala.keys.filter(f => !index.partition.contains(f))
 
     val partialQueries = query.partialRows.map(rowKey => {
       val splitClauses = Seq(
@@ -363,8 +364,8 @@ class CassandraDataSource @Inject() (
     // TODO: atomically batch queries
     val results = queries.map(session.execute(_)).map(_.all).filter(_.size > 0)
     if (results.size > 0) {
-      results.reduce(_++_).map(row => {
-        val columnsToGrab = row.getColumnDefinitions.map(_.getName)
+      results.map(_.asScala).reduce(_ ++ _).map(row => {
+        val columnsToGrab = row.getColumnDefinitions.asScala.map(_.getName)
         columnsToGrab.map(f => {
           (selectionsReverseIndex.get(f).get, row.getObject(f))
         }).map(_ match {

@@ -14,7 +14,7 @@ import net.codingwell.scalaguice.ScalaModule
 
 import org.glassfish.jersey.server.ResourceConfig
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * Small wrapper class to bootstrap the Application
@@ -105,7 +105,7 @@ class Application @Inject() (
      * The resource path for a given index inside of this object
      */
     def indexResourcePath(index: AionIndexConfig) = {
-      val partitionPathKeys = index.partition.map(p => s"{$p}")
+      val partitionPathKeys = index.partition.asScala.map(p => s"{$p}")
       (Seq(resourcePath, index.name) ++ partitionPathKeys) mkString "/"
     }
 
@@ -131,7 +131,7 @@ class Application @Inject() (
             val values = mapper.readTree(request.getEntityStream)
 
             // Then go through and map each object to the class desired by the dataSource
-            val mappedValues = values.fieldNames.map(fieldName => {
+            val mappedValues = values.fieldNames.asScala.map(fieldName => {
               // This shouldn't return null since we're mapping over the values that the Jackson JsonNode told us that it had
               val jsonNode = Option(values.findValue(fieldName)).getOrElse(throw new RuntimeException("This shouldn't happen if Jackson returns consistent data"))
               (fieldName, jsonToDataSourceObject(fieldName, jsonNode))
@@ -152,7 +152,7 @@ class Application @Inject() (
     /**
      * Builds JAX-RS resources for the elements of each index in this object
      */
-    def indexResources = obj.indices.map(index => {
+    def indexResources = obj.indices.asScala.map(index => {
       import javax.ws.rs.container.ContainerRequestContext
       import org.glassfish.jersey.process.Inflector
       import org.glassfish.jersey.server.model.Resource
@@ -171,7 +171,7 @@ class Application @Inject() (
           // instantiations, getPathParameters returns a MultivaluedMap.
           // Since we only want a single value, we just map over each of the
           // value lists and return the first one.
-          val pathParameters = info.getPathParameters.mapValues(_.head).toMap
+          val pathParameters = info.getPathParameters.asScala.mapValues(_.asScala.head).toMap
           val mappedPathParameters = pathParameters.map(_ match {
             case (k, v) => {
               val jsonNode = mapper.readTree(mapper.writeValueAsBytes(v))

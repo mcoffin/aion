@@ -24,12 +24,12 @@ class AionSplitKeyConfig {
 
 class AionSplitStrategyConfig {
   import com.netscout.aion2.split.SplitStrategies
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
 
   @BeanProperty var name: String = null
   @BeanProperty var config: java.util.Map[String, String] = null
 
-  def strategy = SplitStrategies.createStrategy(name, Option(config.toMap))
+  def strategy = SplitStrategies.createStrategy(name, Option(config.asScala.toMap))
 }
 
 class AionClusteringConfig {
