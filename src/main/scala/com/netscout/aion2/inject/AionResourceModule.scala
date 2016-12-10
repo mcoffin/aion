@@ -16,7 +16,7 @@ import org.reflections.util.ClasspathHelper
 import org.reflections.util.ConfigurationBuilder
 import org.reflections.util.FilterBuilder
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * Provider class for getting the schema.yml resource.
@@ -66,13 +66,13 @@ object AionResourceModule extends AbstractModule with ScalaModule {
   )
 
   override def configure {
-    val annotatedConstructorsParams = reflections.getConstructorsWithAnyParamAnnotated(classOf[AionResource]).map(_.getParameters)
+    val annotatedConstructorsParams = reflections.getConstructorsWithAnyParamAnnotated(classOf[AionResource]).asScala.map(_.getParameters)
     annotatedConstructorsParams.foreach(bindParameters(_))
 
-    val annotatedMethodParams = reflections.getMethodsWithAnyParamAnnotated(classOf[AionResource]).map(_.getParameters)
+    val annotatedMethodParams = reflections.getMethodsWithAnyParamAnnotated(classOf[AionResource]).asScala.map(_.getParameters)
     annotatedMethodParams.foreach(bindParameters(_))
 
-    val annotatedFields = reflections.getFieldsAnnotatedWith(classOf[AionResource])
+    val annotatedFields = reflections.getFieldsAnnotatedWith(classOf[AionResource]).asScala
     annotatedFields.foreach(bindField(_))
   }
 
