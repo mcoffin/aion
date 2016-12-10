@@ -1,5 +1,5 @@
 # aion
-[![Build Status](https://travis-ci.org/FlukeNetworks/aion.svg?branch=master)](https://travis-ci.org/FlukeNetworks/aion)
+[![Build Status](https://travis-ci.org/mcoffin/aion.svg?branch=master)](https://travis-ci.org/mcoffin/aion)
 [![Coverage Status](https://coveralls.io/repos/FlukeNetworks/aion/badge.svg?branch=master&service=github)](https://coveralls.io/github/FlukeNetworks/aion?branch=master)
 [![Stories in Ready](https://badge.waffle.io/FlukeNetworks/aion.svg?label=ready&title=ready)](http://waffle.io/FlukeNetworks/aion)
 [![License](https://img.shields.io/github/license/FlukeNetworks/aion.svg)](https://github.com/FlukeNetworks/aion/blob/master/LICENSE)
